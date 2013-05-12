@@ -1,7 +1,7 @@
 Map       = null;
-CenterLat = 45.0;
-CenterLon = 9.0;
-ZoomLvl   = 5;
+CenterLat = 35.211;
+CenterLon = -80.953;
+ZoomLvl   = 9;
 Planes    = {};
 PlanesOnMap  = 0;
 PlanesOnGrid = 0;
@@ -23,7 +23,7 @@ function getIconForPlane(plane) {
         strokeWeight: (selected ? 2 : 1),
         path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
         scale: 5,
-        fillColor: 'rgb('+r+','+g+','+b+')',
+        fillColor: (selected ? '#FF00FF' : '#FFFF00'),
         fillOpacity: 0.9,
         rotation: plane.track
     };
@@ -194,9 +194,9 @@ function placeFooter() {
 }
 
 function resetMap() {
-    localStorage['CenterLat'] = 45.0;
-    localStorage['CenterLon'] = 9.0;
-    localStorage['ZoomLvl']   = 5;
+    localStorage['CenterLat'] = 35.211;
+    localStorage['CenterLon'] = -80.953;
+    localStorage['ZoomLvl']   = 9;
     Map.setZoom(parseInt(localStorage['ZoomLvl']));
     Map.setCenter(new google.maps.LatLng(parseInt(localStorage['CenterLat']), parseInt(localStorage['CenterLon'])));
     Selected = null;
