@@ -23,7 +23,7 @@ function getIconForPlane(plane) {
         strokeWeight: (selected ? 2 : 1),
         path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
         scale: 5,
-        fillColor: (selected ? '#FF00FF' : '#FFFF00'),
+        fillColor: 'rgb('+r+','+g+','+b+')',
         fillOpacity: 0.9,
         rotation: plane.track
     };
@@ -69,7 +69,7 @@ function refreshTableInfo() {
     var i = document.getElementById('tabinfo');
 
     var html = '<table id="tableinfo" width="100%">';
-    html += '<thead style="background-color: #CCCCCC;"><td>Flight</td><td align="right">Altitude</td><td align="center">Speed</td><td align="center">Track</td><td>Lat</td><td>Long</td><td>Seen</td><td>Msgs</td></thead>';
+    html += '<thead style="background-color: #CCCCCC;"><td>Flight</td><td>Sqwk</td><td align="right">Altitude</td><td align="center">Speed</td><td align="center">Track</td><td>Lat</td><td>Long</td><td>Seen</td><td>Msgs</td></thead>';
     for (var p in Planes) {
         if (p == Selected) {
             html += '<tr style="background-color: #F0F0F0;">';
@@ -77,13 +77,14 @@ function refreshTableInfo() {
             html += '<tr>';
         }
         html += '<td>' + Planes[p].flight + '</td>';
+	html += '<td>' + Planes[p].squawk + '</td>';
         html += '<td align="right">' + Planes[p].altitude + '</td>';
         html += '<td align="center">' + Planes[p].speed + '</td>';
         html += '<td align="center">' + Planes[p].track + '</td>';
         html += '<td>' + Planes[p].lat + '</td>';
         html += '<td>' + Planes[p].lon + '</td>';
         html += '<td align="center">' + Planes[p].seen + '</td>';
-        html += '<td align="center">' + Planes[p].messages + '</td>';
+        html += '<td align="right">' + Planes[p].messages + '</td>';
         html += '</tr>';
     }
     html += '</table>';
@@ -91,74 +92,114 @@ function refreshTableInfo() {
 }
 
 function fetchData() {
-    $.getJSON('data.json', function(data) {
-        var stillhere = {}
-        PlanesOnMap = 0;
-        
-        for (var j=0; j < data.length; j++) {
-            var plane = data[j];
-            stillhere[plane.hex] = true;
-            plane.flight = $.trim(plane.flight);
-            
-            if (plane.lat != 0 && plane.lon != 0) {
-                // Show only planes with position
-                var marker = null;
-                PlanesOnMap++;
-                
-                if (Planes[plane.hex]) {
-                    // Move and refresh old plane on map
-                    var myplane = Planes[plane.hex];
-                    marker = myplane.marker;
-                    var icon = marker.getIcon();
-                    var newpos = new google.maps.LatLng(plane.lat, plane.lon);
-                    marker.setPosition(newpos);
-                    marker.setIcon(getIconForPlane(plane));
-                    myplane.altitude = plane.altitude;
-                    myplane.speed = plane.speed;
-                    myplane.lat = plane.lat;
-                    myplane.lon = plane.lon;
-                    myplane.track = plane.track;
-                    myplane.flight = plane.flight;
-                    myplane.seen = plane.seen;
-                    myplane.messages = plane.messages;
-                    if (myplane.hex == Selected)
-                        refreshSelectedInfo();
-                } else {
-                    // Add new plane to map
-                    marker = new google.maps.Marker({
-                        position: new google.maps.LatLng(plane.lat, plane.lon),
-                        map: Map,
-                        icon: getIconForPlane(plane)
-                    });
-                    plane.marker = marker;
-                    marker.planehex = plane.hex;
-                    Planes[plane.hex] = plane;
+	$.getJSON('data.json', function(data) {
+		// Planes that are still with us, and set map count to 0
+		var stillhere = {}
+		PlanesOnMap = 0;
 
-                    // Trap clicks for this marker.
-                    google.maps.event.addListener(marker, 'click', selectPlane);
-                }
-                
-                if (plane.flight.length == 0) {
-                    marker.setTitle(plane.hex)
-                } else {
-                    marker.setTitle(plane.flight+' ('+plane.hex+')')
-                }
-            }
-        }
+		// Loop through all the planes in the data packet
+		for (var j=0; j < data.length; j++) {
 
-        PlanesOnGrid = data.length;
-        
-        /* Remove idle planes. */
-        for (var p in Planes) {
-            if (!stillhere[p]) {
-                Planes[p].marker.setMap(null);
-                delete Planes[p];
-            }
-        }
+			// Set plane to be this particular plane in the data set
+			var plane = data[j];
+			// Add to the still here list
+			stillhere[plane.hex] = true;
+			plane.flight = $.trim(plane.flight);
 
-        refreshTableInfo() ;
+			// Set the marker to null, for now
+			var marker = null;
 
-    });
+			// Either update the data or add it
+			if (Planes[plane.hex]) {
+				// Declare our plane that we are working with from our old data set
+				var myplane = Planes[plane.hex];
+
+				// If the lat/long is not 0, we should make a marker for it
+				if (plane.lat != 0 && plane.lon != 0) {
+					if (myplane.marker != null) {
+						marker = myplane.marker;
+						var icon = marker.getIcon();
+						var newpos = new google.maps.LatLng(plane.lat, plane.lon);
+						marker.setPosition(newpos);
+						marker.setIcon(getIconForPlane(plane));
+						PlanesOnMap++;
+					} else {
+						// Add new plane to map, dont ask me why this is needed here now...
+						marker = new google.maps.Marker({
+							position: new google.maps.LatLng(plane.lat, plane.lon),
+							map: Map,
+							icon: getIconForPlane(plane)
+						});
+						myplane.marker = marker;
+						marker.planehex = plane.hex;
+						PlanesOnMap++;
+
+						// Trap clicks for this marker.
+						google.maps.event.addListener(marker, 'click', selectPlane);
+					}
+				}
+
+				// Update all the other information
+				myplane.altitude = plane.altitude;
+				myplane.speed = plane.speed;
+				myplane.lat = plane.lat;
+				myplane.lon = plane.lon;
+				myplane.track = plane.track;
+				myplane.flight = plane.flight;
+				myplane.seen = plane.seen;
+				myplane.messages = plane.messages;
+
+				// If this is a selected plane, refresh its data outside of the table
+				if (myplane.hex == Selected)
+					refreshSelectedInfo();
+			} else {
+				// This is a new plane
+				// Do we have a lat/long that is not 0?
+				if (plane.lat != 0 && plane.lon != 0) {
+					// Add new plane to map
+					marker = new google.maps.Marker({
+						position: new google.maps.LatLng(plane.lat, plane.lon),
+						map: Map,
+						icon: getIconForPlane(plane)
+					});
+					plane.marker = marker;
+					marker.planehex = plane.hex;
+					PlanesOnMap++;
+
+					// Trap clicks for this marker.
+					google.maps.event.addListener(marker, 'click', selectPlane);
+				}
+
+				// Copy the plane into Planes
+				Planes[plane.hex] = plane;
+			}
+
+			// If we have lat/long, we must have a marker, so lets set the marker title
+			if (plane.lat != 0 && plane.lon != 0) {
+				if (plane.flight.length == 0) {
+					marker.setTitle(plane.hex)
+				} else {
+					marker.setTitle(plane.flight+' ('+plane.hex+')')
+				}
+			}
+
+		}
+
+		// How many planes have we heard from?
+		PlanesOnGrid = data.length;
+
+		/* Remove idle planes. */
+		for (var p in Planes) {
+			if (!stillhere[p]) {
+				if (Planes[p].marker != null)
+					Planes[p].marker.setMap(null);
+				delete Planes[p];
+			}
+		}
+
+		refreshTableInfo() ;
+
+	});
 }
 
 function checkTime(i) {
