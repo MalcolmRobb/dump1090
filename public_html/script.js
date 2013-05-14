@@ -74,7 +74,7 @@ function refreshTableInfo() {
     var i = document.getElementById('tabinfo');
 
     var html = '<table id="tableinfo" width="100%">';
-    html += '<thead style="background-color: #CCCCCC;"><td>Flight</td><td>Sqwk</td><td align="right">Altitude</td><td align="center">Speed</td><td align="center">Track</td><td>Lat</td><td>Long</td><td>Seen</td><td>Msgs</td></thead>';
+    html += '<thead style="background-color: #CCCCCC;"><td onclick="iDefaultSortCol = 2">Flight</td><td onclick="iDefaultSortCol = 1">Sqwk</td><td align="right" onclick="iDefaultSortCol = 5">Altitude</td><td align="center" onclick="iDefaultSortCol = 7">Speed</td><td align="center" onclick="iDefaultSortCol = 3"6>Track</td><td onclick="iDefaultSortCol = 3">Lat</td><td onclick="iDefaultSortCol = 4">Long</td><td onclick="iDefaultSortCol = 9">Seen</td><td onclick="iDefaultSortCol = 8">Msgs</td></thead>';
     for (var p in Planes) {
         if (p == Selected) {
             html += '<tr style="background-color: #F0F0F0;">';
@@ -94,6 +94,7 @@ function refreshTableInfo() {
     }
     html += '</table>';
     i.innerHTML = html;
+    sortTable("tableinfo");
 }
 
 function sortTable(szTableID,iCol){ 
