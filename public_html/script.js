@@ -1,11 +1,16 @@
-Map       = null;
-CenterLat = 35.211;
-CenterLon = -80.953;
-ZoomLvl   = 9;
-Planes    = {};
-PlanesOnMap  = 0;
-PlanesOnGrid = 0;
-Selected     = null;
+var Map       = null;
+var CenterLat = 35.211;
+var CenterLon = -80.953;
+var ZoomLvl   = 9;
+var Planes    = {};
+var PlanesOnMap  = 0;
+var PlanesOnGrid = 0;
+var Selected     = null;
+
+var iSortCol=-1;
+var bSortASC=true;
+var bDefaultSortASC=true;
+var iDefaultSortCol=1;
 
 if (localStorage['CenterLat']) { CenterLat = Number(localStorage['CenterLat']); }
 if (localStorage['CenterLon']) { CenterLon = Number(localStorage['CenterLon']); }
@@ -89,6 +94,48 @@ function refreshTableInfo() {
     }
     html += '</table>';
     i.innerHTML = html;
+}
+
+function sortTable(szTableID,iCol){ 
+    //if iCol was not provided, assign default value
+    if(typeof iCol==='undefined') var iCol=iDefaultSortCol;
+
+    //retrieve passed table element
+    var oTbl=document.getElementById(szTableID).tBodies[0];
+    var aStore=[];
+
+    //If supplied col # is greater than the actual number of cols, set sel col = to last col
+    if(oTbl.rows[0].cells.length<=iCol) iCol=(oTbl.rows[0].cells.length-1);
+
+    //if sort called from the same col #, change sorting order, else set to default sorting order
+    bSortASC=iCol==iSortCol?!bSortASC:bDefaultSortASC;
+
+    //store the col #
+    iSortCol=iCol;
+
+    //determine if we are delaing with numerical, or alphanumeric content
+    bNumeric=!isNaN(parseFloat(oTbl.rows[0].cells[iSortCol].textContent||oTbl.rows[0].cells[iSortCol].innerText))?true:false;
+
+    //loop through the rows, storing each one inro aStore
+    for(var i=0,iLen=oTbl.rows.length;i<iLen;i++){
+        var oRow=oTbl.rows[i];
+        vColData=bNumeric?parseFloat(oRow.cells[iSortCol].textContent||oRow.cells[iSortCol].innerText):String(oRow.cells[iSortCol].textContent||oRow.cells[iSortCol].innerText);
+        aStore.push([vColData,oRow]);
+    }
+
+    //sort aStore ASC/DESC based on value of bSortASC
+    if(bNumeric){//numerical sort
+        aStore.sort(function(x,y){return bSortASC?x[0]-y[0]:y[0]-x[0];});
+    }else{//alpha sort
+        aStore.sort();
+        if(!bSortASC) aStore.reverse();
+    }
+
+    //rewrite the table rows to the passed table element
+    for(var i=0,iLen=aStore.length;i<iLen;i++){
+        oTbl.appendChild(aStore[i][1]);
+    }
+    aStore=null;
 }
 
 function fetchData() {
