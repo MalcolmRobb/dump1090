@@ -1,7 +1,7 @@
 var Map       = null;
-var CenterLat = 35.211;
-var CenterLon = -80.953;
-var ZoomLvl   = 9;
+var CenterLat = 45.0;
+var CenterLon = 9.0;
+var ZoomLvl   = 5;
 var Planes    = {};
 var PlanesOnMap  = 0;
 var PlanesOnGrid = 0;
@@ -371,9 +371,9 @@ function placeFooter() {
 }
 
 function resetMap() {
-    localStorage['CenterLat'] = 35.211;
-    localStorage['CenterLon'] = -80.953;
-    localStorage['ZoomLvl']   = 9;
+    localStorage['CenterLat'] = 45.0;
+    localStorage['CenterLon'] = 9.0;
+    localStorage['ZoomLvl']   = 5;
     Map.setZoom(parseInt(localStorage['ZoomLvl']));
     Map.setCenter(new google.maps.LatLng(parseInt(localStorage['CenterLat']), parseInt(localStorage['CenterLon'])));
     Selected = null;
