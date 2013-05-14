@@ -39,4 +39,10 @@ margin:0px;
 font-size: x-small;
 font-family: monospace;
 }
+#tableinforow {
+cursor: pointer;
+}
+#tableinforow .bold {
+font-weight:bold;
+}
 
