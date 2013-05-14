@@ -10,133 +10,218 @@ var Selected     = null;
 var iSortCol=-1;
 var bSortASC=true;
 var bDefaultSortASC=true;
-var iDefaultSortCol=1;
+var iDefaultSortCol=3;
 
 if (localStorage['CenterLat']) { CenterLat = Number(localStorage['CenterLat']); }
 if (localStorage['CenterLon']) { CenterLon = Number(localStorage['CenterLon']); }
 if (localStorage['ZoomLvl'])   { ZoomLvl   = Number(localStorage['ZoomLvl']); }
 
-function getIconForPlane(plane) {
+function getIconForPlane(plane, deselect) {
+    var selected = false;
+    var track = 0;
     var r = 255, g = 255, b = 0;
     var maxalt = 40000; // Max altitude in the average case
-    var invalt = maxalt-plane.altitude;
-    var selected = (Selected == plane.hex);
-
+    var invalt = 0;
+    
+    // If there is plane object
+    if (plane) {
+        invalt = maxalt-plane.altitude;
+        if (Selected == plane.hex && !deselect) {
+            selected = true;
+        }
+        track = plane.track;
+    }
+    
     if (invalt < 0) invalt = 0;
     b = parseInt(255/maxalt*invalt);
+    
     return {
         strokeWeight: (selected ? 2 : 1),
         path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
         scale: 5,
         fillColor: 'rgb('+r+','+g+','+b+')',
         fillOpacity: 0.9,
-        rotation: plane.track
+        rotation: track
     };
 }
 
-function selectPlane() {
-    if (!Planes[this.planehex]) return;
+/* Gets hex code of selected plane as string or nothing.     *
+ * Select not valid ICAO24 (hex) address to clear selection. */
+function selectPlane(selectedPlane) {
+    if (selectedPlane.length) this.planehex = selectedPlane;
+    
+    // Deselect planes
+    if (!Planes[this.planehex]) {
+        if (Planes[Selected].marker) {
+            Planes[Selected].marker.setIcon(getIconForPlane(Planes[Selected], true));
+        }
+        Selected = null;
+        refreshSelectedInfo();
+        refreshTableInfo();
+        return;
+    }
+    
     var old = Selected;
     Selected = this.planehex;
-    if (Planes[old]) {
-        /* Remove the highlight in the previously selected plane. */
+    
+    if (Planes[old] && Planes[old].validposition) {
+        // Remove the highlight in the previously selected plane.
         Planes[old].marker.setIcon(getIconForPlane(Planes[old]));
     }
-    Planes[Selected].marker.setIcon(getIconForPlane(Planes[Selected]));
+    
+    if (Planes[Selected].validposition) {
+        Planes[Selected].marker.setIcon(getIconForPlane(Planes[Selected]));
+    }
+    
     refreshSelectedInfo();
+    refreshTableInfo();
 }
 
 function refreshGeneralInfo() {
     var i = document.getElementById('geninfo');
 
-    i.innerHTML  = PlanesOnGrid + ' planes on grid.<br>';
-    i.innerHTML += PlanesOnMap + ' planes on map.';
+    i.innerHTML  = PlanesOnMap + ' planes on map.<br>';
+    i.innerHTML += PlanesOnGrid + ' planes on grid.';
 }
 
 function refreshSelectedInfo() {
     var i = document.getElementById('selinfo');
     var p = Planes[Selected];
-
-    if (!p) return;
-    var html = 'ICAO: '+p.hex+'<br>';
-    if (p.flight.length) {
-        html += '<b>'+p.flight+'</b><br>';
+    
+    // If no plane is selected
+    if (!p) {
+        p = {};
+        p.flight = "";
+        p.hex = "";
+        p.squawk = "";
+        p.altitude = "0";
+        p.speed = "0";
+        p.lat = "lat";
+        p.lon = "lon";
+        p.messages = "0";
+        p.seen = "0";
     }
-    html += 'Altitude: '+p.altitude+' feet<br>';
-    html += 'Speed: '+p.speed+' knots<br>';
-    html += 'Coordinates: '+p.lat+', '+p.lon+'<br>';
-    html += 'Messages: '+p.messages+'<br>';
-    html += 'Seen: '+p.seen+' sec<br>';
+    
+    var html = '<table id="selectedinfo">';
+    html += '<tr><td colspan=2><b>'+p.flight+'&nbsp;</b></td></tr>';
+    html += '<tr><td>ICAO:</td><td>'+p.hex+'</td></tr>';
+    if (p.squawk != "0000") {
+        html += '<tr><td>Squawk:</td><td>'+p.squawk+'</td></tr>';
+    } else {
+        html += '<tr><td>Squawk:</td><td>n/a</td></tr>';
+    }
+    html += '<tr><td>Altitude:</td><td>'+p.altitude+' feet</td></tr>';
+    html += '<tr><td>Speed:</td><td>'+p.speed+' knots</td></tr>';
+    if (p.validposition) {
+        html += '<tr><td>Coordinates:</td><td>'+p.lat+', '+p.lon+'</td></tr>';
+    } else {
+        html += '<tr><td>Coordinates:</td><td>n/a</td></tr>';
+    }
+    html += '<tr><td>Messages:</td><td>'+p.messages+'</td></tr>';
+    html += '<tr><td>Seen:</td><td>'+p.seen+' sec</td></tr>';
+    html += '</table>';
     i.innerHTML = html;
 }
 
 function refreshTableInfo() {
-    var i = document.getElementById('tabinfo');
+	var html = '<table id="tableinfo" width="100%">';
+	html += '<thead style="background-color: #CCCCCC;">';
+	html += '<td onclick="setASC_DESC(\'0\');sortTable(\'tableinfo\',\'0\');">hex</td>';
+	html += '<td onclick="setASC_DESC(\'1\');sortTable(\'tableinfo\',\'1\');">Flight</td>';
+	html += '<td onclick="setASC_DESC(\'2\');sortTable(\'tableinfo\',\'2\');" align="right">Squawk</td>';
+	html += '<td onclick="setASC_DESC(\'3\');sortTable(\'tableinfo\',\'3\');" align="right">Altitude</td>';
+	html += '<td onclick="setASC_DESC(\'4\');sortTable(\'tableinfo\',\'4\');" align="right">Speed</td>';
+	html += '<td onclick="setASC_DESC(\'5\');sortTable(\'tableinfo\',\'5\');" align="right">Track</td>';
+	html += '<td onclick="setASC_DESC(\'6\');sortTable(\'tableinfo\',\'6\');" align="right">Msgs</td>';
+	html += '<td onclick="setASC_DESC(\'7\');sortTable(\'tableinfo\',\'7\');" align="right">Seen</td></thead>';
+	for (var p in Planes) {
+		var specialStyle = "";
+		if (p == Selected) {
+			html += '<tr id="tableinforow" style="background-color: #E0E0E0;">';
+		} else {
+			html += '<tr id="tableinforow">';
+		}
+		if (Planes[p].validposition) {
+			specialStyle = 'bold';
+		}
+		html += '<td class="' + specialStyle + '">' + Planes[p].hex + '</td>';
+		html += '<td class="' + specialStyle + '">' + Planes[p].flight + '</td>';
+		html += '<td class="' + specialStyle + '" align="right">' + Planes[p].squawk + '</td>';
+		html += '<td class="' + specialStyle + '" align="right">' + Planes[p].altitude + '</td>';
+		html += '<td class="' + specialStyle + '" align="right">' + Planes[p].speed + '</td>';
+		html += '<td class="' + specialStyle + '" align="right">' + Planes[p].track + '</td>';
+		html += '<td class="' + specialStyle + '" align="right">' + Planes[p].messages + '</td>';
+		html += '<td class="' + specialStyle + '" align="right">' + Planes[p].seen + '</td>';
+		html += '</tr>';
+	}
+	html += '</table>';
 
-    var html = '<table id="tableinfo" width="100%">';
-    html += '<thead style="background-color: #CCCCCC;"><td onclick="iDefaultSortCol = 2">Flight</td><td onclick="iDefaultSortCol = 1">Sqwk</td><td align="right" onclick="iDefaultSortCol = 5">Altitude</td><td align="center" onclick="iDefaultSortCol = 7">Speed</td><td align="center" onclick="iDefaultSortCol = 3"6>Track</td><td onclick="iDefaultSortCol = 3">Lat</td><td onclick="iDefaultSortCol = 4">Long</td><td onclick="iDefaultSortCol = 9">Seen</td><td onclick="iDefaultSortCol = 8">Msgs</td></thead>';
-    for (var p in Planes) {
-        if (p == Selected) {
-            html += '<tr style="background-color: #F0F0F0;">';
-        } else {
-            html += '<tr>';
-        }
-        html += '<td>' + Planes[p].flight + '</td>';
-	html += '<td>' + Planes[p].squawk + '</td>';
-        html += '<td align="right">' + Planes[p].altitude + '</td>';
-        html += '<td align="center">' + Planes[p].speed + '</td>';
-        html += '<td align="center">' + Planes[p].track + '</td>';
-        html += '<td>' + Planes[p].lat + '</td>';
-        html += '<td>' + Planes[p].lon + '</td>';
-        html += '<td align="center">' + Planes[p].seen + '</td>';
-        html += '<td align="right">' + Planes[p].messages + '</td>';
-        html += '</tr>';
-    }
-    html += '</table>';
-    i.innerHTML = html;
-    sortTable("tableinfo");
+	document.getElementById('tabinfo').innerHTML = html;
+
+	// Click event for table - lags sometimes for some reason?
+	$('#tableinfo').find('tr').click( function(){
+		var hex = $(this).find('td:first').text();
+		selectPlane(hex);
+	});
+
+	sortTable("tableinfo");
 }
 
-function sortTable(szTableID,iCol){ 
-    //if iCol was not provided, assign default value
-    if(typeof iCol==='undefined') var iCol=iDefaultSortCol;
+// Credit goes to a co-worker that needed a similar functions for something else
+// we get a copy of it free ;)
+function setASC_DESC(iCol) {
+	if(iSortCol==iCol) {
+		bSortASC=!bSortASC;
+	} else {
+		bSortASC=bDefaultSortASC;
+	}
+}
 
-    //retrieve passed table element
-    var oTbl=document.getElementById(szTableID).tBodies[0];
-    var aStore=[];
+function sortTable(szTableID,iCol) { 
+	//if iCol was not provided, and iSortCol is not set, assign default value
+	if (typeof iCol==='undefined'){
+		if(iSortCol!=-1){
+			var iCol=iSortCol;
+		} else {
+			var iCol=iDefaultSortCol;
+		}
+	}
 
-    //If supplied col # is greater than the actual number of cols, set sel col = to last col
-    if(oTbl.rows[0].cells.length<=iCol) iCol=(oTbl.rows[0].cells.length-1);
+	//retrieve passed table element
+	var oTbl=document.getElementById(szTableID).tBodies[0];
+	var aStore=[];
 
-    //if sort called from the same col #, change sorting order, else set to default sorting order
-    bSortASC=iCol==iSortCol?!bSortASC:bDefaultSortASC;
+	//If supplied col # is greater than the actual number of cols, set sel col = to last col
+	if (oTbl.rows[0].cells.length<=iCol)
+		iCol=(oTbl.rows[0].cells.length-1);
 
-    //store the col #
-    iSortCol=iCol;
+	//store the col #
+	iSortCol=iCol;
 
-    //determine if we are delaing with numerical, or alphanumeric content
-    bNumeric=!isNaN(parseFloat(oTbl.rows[0].cells[iSortCol].textContent||oTbl.rows[0].cells[iSortCol].innerText))?true:false;
+	//determine if we are delaing with numerical, or alphanumeric content
+	bNumeric=!isNaN(parseFloat(oTbl.rows[0].cells[iSortCol].textContent||oTbl.rows[0].cells[iSortCol].innerText))?true:false;
 
-    //loop through the rows, storing each one inro aStore
-    for(var i=0,iLen=oTbl.rows.length;i<iLen;i++){
-        var oRow=oTbl.rows[i];
-        vColData=bNumeric?parseFloat(oRow.cells[iSortCol].textContent||oRow.cells[iSortCol].innerText):String(oRow.cells[iSortCol].textContent||oRow.cells[iSortCol].innerText);
-        aStore.push([vColData,oRow]);
-    }
+	//loop through the rows, storing each one inro aStore
+	for (var i=0,iLen=oTbl.rows.length;i<iLen;i++){
+		var oRow=oTbl.rows[i];
+		vColData=bNumeric?parseFloat(oRow.cells[iSortCol].textContent||oRow.cells[iSortCol].innerText):String(oRow.cells[iSortCol].textContent||oRow.cells[iSortCol].innerText);
+		aStore.push([vColData,oRow]);
+	}
 
-    //sort aStore ASC/DESC based on value of bSortASC
-    if(bNumeric){//numerical sort
-        aStore.sort(function(x,y){return bSortASC?x[0]-y[0]:y[0]-x[0];});
-    }else{//alpha sort
-        aStore.sort();
-        if(!bSortASC) aStore.reverse();
-    }
+	//sort aStore ASC/DESC based on value of bSortASC
+	if(bNumeric){//numerical sort
+		aStore.sort(function(x,y){return bSortASC?x[0]-y[0]:y[0]-x[0];});
+	}else{//alpha sort
+		aStore.sort();
+		if(!bSortASC)
+			aStore.reverse();
+	}
 
-    //rewrite the table rows to the passed table element
-    for(var i=0,iLen=aStore.length;i<iLen;i++){
-        oTbl.appendChild(aStore[i][1]);
-    }
-    aStore=null;
+	//rewrite the table rows to the passed table element
+	for(var i=0,iLen=aStore.length;i<iLen;i++){
+		oTbl.appendChild(aStore[i][1]);
+	}
+	aStore=null;
 }
 
 function fetchData() {
@@ -162,8 +247,8 @@ function fetchData() {
 				// Declare our plane that we are working with from our old data set
 				var myplane = Planes[plane.hex];
 
-				// If the lat/long is not 0, we should make a marker for it
-				if (plane.lat != 0 && plane.lon != 0) {
+				// If the has valid position, we should make a marker for it
+				if (plane.validposition) {
 					if (myplane.marker != null) {
 						marker = myplane.marker;
 						var icon = marker.getIcon();
@@ -196,6 +281,9 @@ function fetchData() {
 				myplane.flight = plane.flight;
 				myplane.seen = plane.seen;
 				myplane.messages = plane.messages;
+				myplane.squawk = plane.squawk;
+				myplane.validposition = plane.validposition;
+				myplane.validtrack = plane.validtrack;
 
 				// If this is a selected plane, refresh its data outside of the table
 				if (myplane.hex == Selected)
@@ -203,7 +291,7 @@ function fetchData() {
 			} else {
 				// This is a new plane
 				// Do we have a lat/long that is not 0?
-				if (plane.lat != 0 && plane.lon != 0) {
+				if (plane.validposition) {
 					// Add new plane to map
 					marker = new google.maps.Marker({
 						position: new google.maps.LatLng(plane.lat, plane.lon),
@@ -223,7 +311,7 @@ function fetchData() {
 			}
 
 			// If we have lat/long, we must have a marker, so lets set the marker title
-			if (plane.lat != 0 && plane.lon != 0) {
+			if (plane.validposition) {
 				if (plane.flight.length == 0) {
 					marker.setTitle(plane.hex)
 				} else {
@@ -245,8 +333,8 @@ function fetchData() {
 			}
 		}
 
-		refreshTableInfo() ;
-
+		refreshTableInfo();
+		refreshSelectedInfo();
 	});
 }
 
@@ -269,7 +357,7 @@ function printTime() {
     }
 }
 
-function placeFooter() {    
+function placeFooter() {
     var windHeight = $(window).height();
     var footerHeight = $('#info_footer').height();
     var offset = parseInt(windHeight) - parseInt(footerHeight);
@@ -289,7 +377,7 @@ function resetMap() {
     Map.setZoom(parseInt(localStorage['ZoomLvl']));
     Map.setCenter(new google.maps.LatLng(parseInt(localStorage['CenterLat']), parseInt(localStorage['CenterLon'])));
     Selected = null;
-    document.getElementById('selinfo').innerHTML = '';
+    refreshSelectedInfo();
 }
 
 function initialize() {
@@ -338,6 +426,15 @@ function initialize() {
     google.maps.event.addListener(Map, 'zoom_changed', function() {
         localStorage['ZoomLvl']  = Map.getZoom();
     });
+    
+    google.maps.event.addListener(Map, 'click', function() {
+        if (Selected) {
+            selectPlane("xyzxyz"); // Select not valid ICAO24 (hex) address to clear selection.
+        }
+        Selected = null;
+        refreshSelectedInfo();
+        refreshTableInfo();
+    });
 
     // Setup our timer to poll from the server.
     window.setInterval(function() {
@@ -349,4 +446,8 @@ function initialize() {
     window.setInterval(function() {
         printTime();
     }, 250);
+    
+    refreshGeneralInfo();
+    refreshSelectedInfo();
+    refreshTableInfo();
 }
