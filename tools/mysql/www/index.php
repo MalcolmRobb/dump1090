@@ -12,7 +12,7 @@
 			var auto_refresh = setInterval(
 				function () {
 					$('#flights').load('table.php').fadeIn("slow");
-				}, 1000); // refresh every 1000 milliseconds
+				}, 3000); // refresh every 1000 milliseconds
 		</script>
 
 	</head>

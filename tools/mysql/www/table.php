@@ -1,6 +1,6 @@
 <?php
 
-$con = mysql_connect("192.168.2.100","pi","raspberry");
+$con = mysql_connect("localhost","pi","raspberry");
 
 if (!$con)
   {
@@ -20,8 +20,13 @@ while ($row = mysql_fetch_array($result))
         
         echo "<tr style=background-color:#" . $row['icao'] . ">";
         echo "<td style=background-color:#000000>" . $row['country'] . "</td>";
-	echo "<td style=background-color:#000000>" . "<img src=\"images/opflags/" . $row['airline'] . ".bmp\"</td>";
-	echo "<td>" . $row['flight'] . "</td>";
+        if ($row['airline'] == "") {
+          echo "<td style=background-color:#000000></td>";
+        }
+        else {
+	  echo "<td style=background-color:#000000>" . "<img src=\"images/opflags/" . $row['airline'] . ".bmp\"</td>";
+	}
+        echo "<td>" . $row['flight'] . "</td>";
         echo "<td>" . $row['squawk'] . "</td>";
         echo "<td>" . $row['icao'] . "</td>";
         echo "<td>" . $row['lat'] . "</td>";
