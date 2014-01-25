@@ -37,7 +37,7 @@
 // MinorVer changes when additional features are added, but not for bug fixes (range 00-99)
 // DayDate & Year changes for all changes, including for bug fixes. It represent the release date of the update
 //
-#define MODES_DUMP1090_VERSION     "1.07.0710.13"
+#define MODES_DUMP1090_VERSION     "1.08.0125.14"
 
 // ============================= Include files ==========================
 
@@ -56,6 +56,7 @@
     #include <fcntl.h>
     #include <ctype.h>
     #include <sys/stat.h>
+    #include <sys/ioctl.h>
     #include "rtl-sdr.h"
     #include "anet.h"
 #else
@@ -161,6 +162,8 @@
 #define MODES_INTERACTIVE_ROWS          22      // Rows on screen
 #define MODES_INTERACTIVE_DELETE_TTL   300      // Delete from the list after 300 seconds
 #define MODES_INTERACTIVE_DISPLAY_TTL   60      // Delete from display after 60 seconds
+#define MODES_TRAIL_BUFFSZ 512               /* how many floats can be stored inthe trail buffer (power of 2) by default.  */
+#define MODES_TRAIL_ITEMS 2             /* How many floats per position. e.g. could theoretically store alt, but I don't right now.*/
 
 #define MODES_NET_MAX_FD             1024
 #define MODES_NET_INPUT_RAW_PORT    30001
@@ -216,7 +219,11 @@ struct aircraft {
     uint64_t      odd_cprtime;
     uint64_t      even_cprtime;
     double        lat, lon;       // Coordinated obtained from CPR encoded data
+    float        range, elevation; // distance (km) and angle above horizon
+    int          bearing; // Approx bearing 
     int           bFlags;         // Flags related to valid fields in this structure
+    float *trail; /* Rolling buffer for trail. */
+    uint16_t trailofs; /* offset into trail buffer of buffer start */
     struct aircraft *next;        // Next aircraft in our linked list
 };
 
@@ -293,10 +300,26 @@ struct {                             // Internal state
     int   mlat;                      // Use Beast ascii format for raw data output, i.e. @...; iso *...;
     int   interactive_rtl1090;       // flight table in interactive mode is formatted like RTL1090
 
+    //Aircraft trails, e.g. for browser reloads, infrequent updates
+    uint16_t trail_buffsz;	/* size of trail buffer, 2^^N */
+    uint16_t trail_mask;	/* 1-trailbuffsz */
+
     // User details
     double fUserLat;                // Users receiver/antenna lat/lon needed for initial surface location
     double fUserLon;                // Users receiver/antenna lat/lon needed for initial surface location
     int    bUserFlags;              // Flags relating to the user details
+    int rcv_hgt; 	/* Altitude of reciever */
+    double rcv_latkm;	/* approx km per degree latitude */
+    double rcv_lonkm;	/* km per degree longitude */
+
+    // Azimuth file
+    float * maxrange;                  /* Azimuth data */  
+    float * minele;                  /* Azimuth data */  
+    int azimuthfile;                 /* file handle for azimuth file, --azimuth option. */
+    int bgLoops;		/* No point checking the azimuth age multiple times a second  */
+    time_t azi_last_update;	       /* when the azimuth data was last changed */ 
+    time_t azi_last_write;	       /* when the azimuth file was last written */ 
+    int azi_refresh_time;	       /* How often to rewrite the azimuth file */
 
     // Interactive mode
     struct aircraft *aircrafts;

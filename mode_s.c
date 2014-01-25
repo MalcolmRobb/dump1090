@@ -1932,6 +1932,71 @@ double cprDlonFunction(double lat, int fflag, int surface) {
 }
 //
 //=========================================================================
+// Perform crude range calculations. 
+// Dosn't work near the poles, but I don't want to do the spherical trig.
+//
+void calcRange(struct aircraft *a)
+{
+    double range;
+    double bearing;
+    double kmalt;
+    double dns=(a->lat - Modes.fUserLat); /* North +ve */
+    double dew=(a->lon - Modes.fUserLon);/* East is +ve */
+
+    // Date line correction
+    if (dew<-270) dew = dew+360;
+    if (dew>270) dew= dew-360;
+
+    //Lat,lon into distance, Make gross assumption that the world is flat
+    dns = dns * Modes.rcv_latkm;
+    dew = dew * Modes.rcv_lonkm; 
+    range=sqrt(dew*dew+dns*dns);
+
+    if (range<1000) {  /* Sanity check */
+	if (Modes.metric) {
+	    kmalt =(a->altitude - Modes.rcv_hgt)/1e3;
+	} else { 
+	    kmalt=(a->altitude - Modes.rcv_hgt)/ 3.2828e3;
+	}
+
+	a->range=range;
+	bearing=180*atan2(dew,dns)/M_PI; /* Reference is north/south therefore "y" axis is east/west */
+	if (bearing<-0.5) { /* the cast truncates decimal portion, so +/- 0.5 */
+	    a->bearing=360+((int)(bearing-0.5));
+	} else {
+	    a->bearing=(int)(bearing+0.5);
+	}
+	if (range > Modes.maxrange[a->bearing]) {
+	    Modes.maxrange[a->bearing]=range;
+	    Modes.azi_last_update=a->seen;
+	}
+	if (kmalt<(0.13835*range)) {
+	    //atan2 is quite costly, but can use use small angle approximation,
+	    //as error of 0.05 degrees occurs at about 0.13835. Below this 
+	    //there is no difference at 1dp.
+	    a->elevation=180*kmalt/(M_PI*range);
+        } else {
+	    a->elevation=180*atan2(kmalt,range)/M_PI;
+	}
+	if (a->elevation < Modes.minele[a->bearing]) {
+	    Modes.minele[a->bearing]=a->elevation;
+	    Modes.azi_last_update=a->seen;
+	}
+    }
+}
+
+//
+// Trail data for pre-loading web page.
+//
+void UpdateTrail(struct aircraft *a) {
+    /* printf("%d -> ",a->trailofs); */
+    /* printf("%d\n",a->trailofs); */
+    a->trailofs=(a->trailofs-MODES_TRAIL_ITEMS) & Modes.trail_mask;
+    a->trail[a->trailofs]=a->lat;
+    a->trail[a->trailofs+1]=a->lon;
+    a->trail[(a->trailofs-MODES_TRAIL_ITEMS) & Modes.trail_mask]=9999; // Just in case the buffer has looped
+}
+
 //
 // This algorithm comes from:
 // http://www.lll.lu/~edward/edward/adsb/DecodingADSBposition.html.
@@ -1969,6 +2034,14 @@ void decodeCPR(struct aircraft *a, int fflag, int surface) {
     // Check that both are in the same latitude zone, or abort.
     if (cprNLFunction(rlat0) != cprNLFunction(rlat1)) return;
 
+
+    // Put the old position into the trail, if it's a real position.
+    // the trail is stored in most recent first order.
+    if (a->trail && !(a->lat==0.0 && a->lon==0.0) ) {
+	UpdateTrail(a);
+    }
+
+
     // Compute ni and the Longitude Index "m"
     if (fflag) { // Use odd packet.
         int ni = cprNFunction(rlat1,1);
@@ -1993,6 +2066,10 @@ void decodeCPR(struct aircraft *a, int fflag, int surface) {
     a->seenLatLon      = a->seen;
     a->timestampLatLon = a->timestamp;
     a->bFlags         |= (MODES_ACFLAGS_LATLON_VALID | MODES_ACFLAGS_LATLON_REL_OK);
+
+    if (Modes.bUserFlags & MODES_USER_LATLON_VALID) { 
+	calcRange(a);
+    }
 }
 //
 //=========================================================================
@@ -2061,12 +2138,19 @@ int decodeCPRrelative(struct aircraft *a, int fflag, int surface) {
         return (-1);                               // Time to give up - Longitude error
     }
 
+    if (a->trail && !(a->lat==0.0 && a->lon==0.0) ) {
+	UpdateTrail(a);
+    }
+
     a->lat = rlat;
     a->lon = rlon;
 
     a->seenLatLon      = a->seen;
     a->timestampLatLon = a->timestamp;
     a->bFlags         |= (MODES_ACFLAGS_LATLON_VALID | MODES_ACFLAGS_LATLON_REL_OK);
+    if (Modes.bUserFlags & MODES_USER_LATLON_VALID) { 
+	calcRange(a);
+    }
     return (0);
 }
 //

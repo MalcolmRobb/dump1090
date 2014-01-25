@@ -558,12 +558,32 @@ int decodeHexMessage(struct client *c, char *hex) {
 //
 // Return a description of planes in json. No metric conversion
 //
-char *aircraftsToJson(int *len) {
+char *aircraftsToJson(int *len,const char *trailspec) {
+    // Trailspec is either "N,hexid" or "hexid" Hexid may be a valid id or "*"
     time_t now = time(NULL);
+    char * trailidstr;
+    int trailid;
+    int traillen;
     struct aircraft *a = Modes.aircrafts;
     int buflen = 1024; // The initial buffer is incremented as needed
     char *buf = (char *) malloc(buflen), *p = buf;
     int l;
+    trailid=-1; //magic code: no trails
+    traillen=Modes.trail_buffsz+1;  /* all the data by default */
+    if (trailspec) {
+	trailidstr=strstr(trailspec,",");
+	if (trailidstr) {
+	    trailidstr++;
+	    traillen=strtol(trailspec,NULL,10);
+	} else {
+	    trailidstr=trailspec;
+	}
+	if (*trailidstr=='*') {
+		trailid=0; // magic number: all trails
+	} else {
+		trailid=strtol(trailidstr,NULL,16);
+	}
+    } 
 
     l = snprintf(p,buflen,"[\n");
     p += l; buflen -= l;
@@ -588,19 +608,52 @@ char *aircraftsToJson(int *len) {
         l = snprintf(p,buflen,
             "{\"hex\":\"%06x\", \"squawk\":\"%04x\", \"flight\":\"%s\", \"lat\":%f, "
             "\"lon\":%f, \"validposition\":%d, \"altitude\":%d,  \"vert_rate\":%d,\"track\":%d, \"validtrack\":%d,"
-            "\"speed\":%d, \"messages\":%ld, \"seen\":%d},\n",
+            "\"speed\":%d, \"messages\":%ld, \"seen\":%d, \"seenLL\":%d, \"range\":%.1f, \"bearing\":%d, \"elevation\":%.1f",
             a->addr, a->modeA, a->flight, a->lat, a->lon, position, a->altitude, a->vert_rate, a->track, track,
-            a->speed, a->messages, (int)(now - a->seen));
+            a->speed, a->messages, (int)(now - a->seen), (int)(now - a->seenLatLon), a->range, a->bearing, a->elevation);
         p += l; buflen -= l;
-        
-        //Resize if needed
+	// Haven't finished this plane yet, but still Resize if needed
         if (buflen < 256) {
             int used = p-buf;
             buflen += 1024; // Our increment.
             buf = (char *) realloc(buf,used+buflen);
             p = buf+used;
         }
-        
+	/* If there's a trail, then check the value of passed trailid. If
+	 * it's '*' or matches this hexaddr, then print the trail data too. */
+	if (Modes.trail_buffsz==0 || a->trail==NULL || trailid<0 || (trailid != 0 && (unsigned) trailid != a->addr)) {
+	    // No trail to add; No point calling snprintf either.
+	    p[0]='}';
+	    p[1]=',';
+	    p[2]='\n';
+	    p+=3;
+	    buflen-=3;
+	} else {
+	    int idx;
+	    int count;
+	    count=0;
+	    l = snprintf(p,buflen,",\"trail\":[");
+	    p += l; buflen -= l;
+	    /* End of data signaled by 9999 in the lat/long. the trial buffer is a rolling buffer, a power of 2 long  */
+	    for(idx=a->trailofs;count<traillen && a->trail[idx]<181 && a->trail[idx]>-181 ;idx=(idx+MODES_TRAIL_ITEMS)&Modes.trail_mask) {
+		count++;
+		l=snprintf(p,buflen,"[%.5f,%.5f],",a->trail[idx],a->trail[idx+1]);
+		p += l; buflen -= l;
+		if (buflen < 256) {
+		    int used = p-buf;
+		    buflen += 1000; /* increment. (not power of 2, in case of malloc-lib housekeeping) */
+		    buf = realloc(buf,used+buflen);
+		    p = buf+used;
+		}
+	    }
+	    if (count) { /* Overwrite final comma if its there */
+		p--;
+		buflen++;
+	    }
+	    l=snprintf(p,buflen,"]},\n");
+	    p += l; buflen -= l;
+	}
+    
         a = a->next;
     }
 
@@ -617,6 +670,59 @@ char *aircraftsToJson(int *len) {
     *len = p-buf;
     return buf;
 }
+
+//
+//=========================================================================
+//
+// Return Azimuth data as JSON, No non-metric conversion.
+//
+char *aziToJson(int *len) {
+    int buflen = 10240; /* initial buffer length */
+    char *buf = malloc(buflen), *p = buf;
+    int l;
+    l = snprintf(p,buflen,"[\n");
+    p += l; buflen -= l;
+    int i;
+    for(i=0;(i<360 && buflen>12);i++) {
+	double lat,lon;
+	double bearing=i*M_PI/180.0;
+	
+	lat=Modes.fUserLat+(Modes.maxrange[i]*cos(bearing))/Modes.rcv_latkm; /* N +ve */
+	lon=Modes.fUserLon+(Modes.maxrange[i]*sin(bearing))/Modes.rcv_lonkm; /* E +ve */
+
+	l = snprintf(p,buflen,"[%.6f,%.6f],",lat,lon);
+	buflen-=l;
+	p+=l;
+	if (buflen < 256) {
+	    int used = p-buf;
+	    buflen += 1024; /* Our increment. */
+	    buf = realloc(buf,used+buflen);
+	    p = buf+used;
+	}
+    }
+    p-=1;buflen+=1;
+    l = snprintf(p,buflen,"]\n");
+    p += l; buflen -= l;
+    *len = p-buf;
+    return buf;
+}
+//
+//=========================================================================
+//
+// Javascript fragment to alter default settings with actual runtime values.
+//
+char *runtimeToJS(int *len) {
+    int buflen = 1024; /* initial buffer length */
+    char *buf = malloc(buflen), *p = buf;
+    int l;
+    if (Modes.bUserFlags & MODES_USER_LATLON_VALID) {
+	l = snprintf(p,buflen,"CONST_ZOOMLVL=7;\nCONST_CENTERLAT=SiteLat=%f;\nCONST_CENTERLON=SiteLon=%f;\nSiteShow=true;\n",Modes.fUserLat,Modes.fUserLon);
+	p += l; buflen -= l;
+    }
+    *len = p-buf;
+    return(buf);
+}
+
 //
 //=========================================================================
 //
@@ -673,12 +779,23 @@ int handleHTTPRequest(struct client *c, char *p) {
         snprintf(getFile, sizeof getFile, "%s/%s", HTMLPATH, url);
     }
 
-    // Select the content to send, we have just two so far:
+    // Select the content to send, we have just four so far:
     // "/" -> Our google map application.
     // "/data.json" -> Our ajax request to update planes.
-    if (strstr(url, "/data.json")) {
-        content = aircraftsToJson(&clen);
-        //snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JSON);
+    // "/azi.json" -> ajax request for azimuth data
+    // "/config2.js" -> runtime configuration
+    char * start;
+
+    if ( (start=strstr(url, "/data.json"))!=0 ) {
+	if (*(start+10) =='?' && *(start+11) !='\0') {
+	    content = aircraftsToJson(&clen,start+11);
+	} else {
+	    content = aircraftsToJson(&clen,NULL);
+	}
+    } else if (strstr(url, "/azi.json")) {
+    	content = aziToJson(&clen);
+    } else if (strstr(url,"/runtime.js")) {
+    	content = runtimeToJS(&clen);
     } else {
         struct stat sbuf;
         int fd = -1;

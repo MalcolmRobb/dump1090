@@ -72,6 +72,16 @@ struct aircraft *interactiveCreateAircraft(struct modesMessage *mm) {
             mm->bFlags  |= MODES_ACFLAGS_ALTITUDE_VALID;
         } 
     }
+    if (Modes.trail_buffsz) {
+	a->trail=malloc(sizeof(float)*Modes.trail_buffsz); /* test for valid pointer is done on access, so that we can continue even when memory is low. */
+	if (a->trail) {
+	    a->trail[0]=9999;
+	    a->trail[MODES_TRAIL_ITEMS]=9999;
+	}
+	a->trailofs=0;
+    } else {
+    	a->trail=NULL;
+    }
     return (a);
 }
 //
@@ -459,6 +469,8 @@ void interactiveRemoveStaleAircrafts(void) {
             else
                 prev->next = next;
 
+            if (a->trail)
+                free(a->trail);
             free(a);
             a = next;
         } else {
