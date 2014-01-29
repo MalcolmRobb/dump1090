@@ -1,3 +1,5 @@
+var deadPaths=[]; // If the user has so selected, somwehere to put dead planes's tracks
+
 var planeObject = {
 	oldlat		: null,
 	oldlon		: null,
@@ -19,6 +21,7 @@ var planeObject = {
 	// Data packet numbers
 	messages	: null,
 	seen		: null,
+	seenLL		: null,
 
 	// Vaild...
 	vPosition	: false,
@@ -27,7 +30,10 @@ var planeObject = {
 	// GMap Details
 	marker		: null,
 	markerColor	: MarkerColor,
-	lines		: [],
+	guess		: null,
+	guessUpdate	: 0,
+	lines		: [], //unused so far
+	line		: null,
 	trackdata	: new Array(),
 	trackline	: new Array(),
 
@@ -37,12 +43,81 @@ var planeObject = {
 
 	// Appends data to the running track so we can get a visual tail on the plane
 	// Only useful for a long running browser session.
+
+	getIconForGuess : function() {
+	    var r = 125, g = 125, b = 123;
+	    return {
+		strokeWeight: (this.is_selected ? 3 : 1),
+		scale: 2,
+		path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
+		fillColor: 'rgb('+r+','+g+','+b+')',
+		fillOpacity: 0.5,
+                //anchor: new google.maps.Point(1, 1), // Set anchor to middle of plane.
+		rotation: this.track
+	    };
+	},
+
+	updateGuess: function (timestamp) {
+	    /*if (!guessing) {
+		    return;
+	    } */
+	    if (this.speed<1) {return(null)}; // Not moving. Why guess?
+	    /* timestamp is in ms, convert it into hours */
+	    var dTime=(timestamp-this.guessUpdate)/(1000*60*60);
+	    var Dist=this.speed*dTime; /* get Nm travelled */
+	    var dLat=Dist*tabCos[Math.floor(this.track)]*latPerNm;
+	    var dLon=Dist*tabSin[Math.floor(this.track)]*lonPerNm;
+	    this.guessUpdate=timestamp;
+	    this.guessLat+=dLat;
+	    this.guessLon+=dLon;
+	    if (this.guess) {
+		    this.guess.setPosition(new google.maps.LatLng(this.guessLat, this.guessLon));
+		    this.guess.visible=true;
+	         
+	    } else {
+		    this.guess= new google.maps.Marker({
+			position: new
+			google.maps.LatLng(this.guessLat, this.guessLon),
+			map: GoogleMap,
+			icon: this.getIconForGuess(),
+			visible: true
+		    });
+		    google.maps.event.addListener(this.guess, 'click', this.funcSelectPlane);
+	    }
+		this.guess.setTitle('estimate: ' + this.icao);
+	},
+
 	funcAddToTrack	: function(){
 			// TODO: Write this function out
 			this.trackdata.push([this.latitude, this.longitude, this.altitude, this.track, this.speed]);
 			this.trackline.push(new google.maps.LatLng(this.latitude, this.longitude));
 		},
 
+	// This is to deemphasize the line from the screen if we deselect the plane
+	funcDeselectLine : function() {
+			if (this.line) {
+				this.line.setOptions({strokeWeight:1, 
+					strokeColor: '#000000'});
+			}
+		},
+	// this is to shoe the line on the screen without extendint it.
+	funcShowLine : function() {
+			if (this.line) {
+				this.line.setOptions({
+					strokeWeight: (this.is_selected ? 2 : 1),
+					strokeColor: (this.reapable)?'#ff0000' : '#000000'
+				});
+			        this.line.setMap(GoogleMap);
+			} else {
+				this.line = new google.maps.Polyline({
+					strokeColor: (this.reapable)?'#ff0000' : '#000000',
+					strokeOpacity: 1.0,
+					strokeWeight: (this.is_selected) ? 3:1,
+					map: GoogleMap,
+					path: this.trackline
+				});
+			}
+		},
 	// This is to remove the line from the screen if we deselect the plane
 	funcClearLine	: function() {
 			if (this.line) {
@@ -122,16 +197,54 @@ var planeObject = {
 	funcSelectPlane	: function(selectedPlane){
 			selectPlaneByHex(this.icao);
 		},
+	updateTrail : function(trail,oldlat,oldlon) {
+		//The trail from the server is most recent first. Assuming there is
+		//enough data, then one of the lat/lon pairs must be equal/close to the
+		//previous location. DOES NOT replace funcUpdateLines, as the trail
+		//does not include present location.
+		if (trail && trail[0] && (trail[0][0]!=oldlat || trail[0][1]!=oldlon)) { 
+		    var l=0;
+		    var minDelta=0.00001;
+		    while(l<trail.length && trail[l] && (Math.abs(trail[l][0] - oldlat) > minDelta ||  Math.abs(trail[l][1] - oldlon) > minDelta )) { /* Scan to find the new data */
+			    //console.log(Math.abs(trail[l][0] - oldlat) + ', ' + Math.abs(trail[l][1] - oldlon));
+			    l++;
+		    }
+		    // Did we hit the end or find oldlat,oldlon?  In any case we need to subtract one from l
+		    l--;
+		    //console.log('Trail update:' + this.icao +':' + trail.length + ' > ' + l ) ;
+		    if (l>=0) {
+				/* GoogleMap Polylines are a little strange in their
+				 * relationship to the original trackline.  If we push
+				 * to the PolyLine's path, then it pushes to trackline
+				 * and redraws the map. If we just push to trackline,
+				 * the map is only redrawn if we later push to the
+				 * PolyLine's path. Thus we mut choose which to push to (pushing to
+				 * both makes loops). */
+				if (!this.line) { 
+					for (var k=l; k>=0 && trail[k]; k--) { /* reverse as we do this, since newest data is reported first, and the api needs additions pushed */
+						this.trackdata.push([trail[k][0], trail[k][1], null, null, null]);
+						this.trackline.push(new google.maps.LatLng(trail[k][0],trail[k][1]));
+					}
+				} else {
+					var path=this.line.getPath();
+					for (var k=l; k>=0 && trail[k]; k--) { /* reverse as we do this, since newest data is reported first, and the api needs additions pushed */
+						this.trackdata.push([trail[k][0], trail[k][1], null, null, null]);
+						path.push(new google.maps.LatLng(trail[k][0],trail[k][1]));
+					}
+				}
+			}
+		}
+	},
 
 	// Update our data
-	funcUpdateData	: function(data){
+	funcUpdateData	: function(data,now){
 			// So we can find out if we moved
 			var oldlat 	= this.latitude;
 			var oldlon	= this.longitude;
 			var oldalt	= this.altitude;
 
 			// Update all of our data
-			this.updated	= new Date().getTime();
+			this.updated	= now;
 			this.altitude	= data.altitude;
 			this.speed	= data.speed;
 			this.track	= data.track;
@@ -142,18 +255,32 @@ var planeObject = {
 			this.icao	= data.hex;
 			this.messages	= data.messages;
 			this.seen	= data.seen;
+			this.seenLL	= data.seenLL;
+			this.range	= data.range;
+			this.elevation	= data.elevation;
+			this.bearing	= data.bearing;
+
 
 			// If no packet in over 58 seconds, consider the plane reapable
 			// This way we can hold it, but not show it just in case the plane comes back
 			if (this.seen > 58) {
+			    if (!this.reapable) {
 				this.reapable = true;
-				if (this.marker) {
+				if (this.guess) {  // Remove guess marker
+					this.guess.setMap(null);
+					this.guess = null;
+				}
+				if (this.marker) { // Remove plane marker
 					this.marker.setMap(null);
 					this.marker = null;
 				}
-				if (this.line) {
-					this.line.setMap(null);
-					this.line = null;
+				if (this.line) { // remove trail.. maybe.
+					if (trailDisplay=='showall') {
+						this.line.setOptions({strokeColor: "#ff0000", strokeWeight:1});
+					} else {
+						this.line.setMap(null);
+						this.line = null;
+					}
 				}
 				if (SelectedPlane == this.icao) {
 					if (this.is_selected) {
@@ -161,10 +288,22 @@ var planeObject = {
 					}
 					SelectedPlane = null;
 				}
+			    }
 			} else {
 				if (this.reapable == true) {
+					this.reapable = false;
 				}
-				this.reapable = false;
+			}
+
+			// If we've been paused long enough there could be new 
+			// track data that should be added, even if the plane is
+			// now old, in case the plane comes back,
+			// or if we're plotting and keeping
+			// all trails. Therefore, we always process the track history. 
+			// Note that trail does not contain the current position, so check that it actually moved
+			if (data.trail && data.trail.length && (oldlat != this.latitude || oldlon != this.longitude) ) {
+				//console.log('Trail update:' + this.icao +':' + data.trail.length ) ;
+				this.updateTrail(data.trail,oldlat,oldlon);
 			}
 
 			// Is the position valid?
@@ -186,16 +325,31 @@ var planeObject = {
 				}
 				// Right now we only care about lat/long, if alt is updated only, oh well
 				if ((changeLat == true) || (changeLon == true)) {
+					if (this.guess) {
+					    this.guess.setMap(null);
+					    this.guess=null;
+					}
 					this.funcAddToTrack();
-					if (this.is_selected) {
+					if (this.is_selected || form.elements['traildisplay'].value!='selected' ) {
 						this.line = this.funcUpdateLines();
 					}
+					this.guessUpdate=now-1000*this.seenLL;
+					this.guessLat=this.latitude;
+					this.guessLon=this.longitude;
+				} 
+				if (this.seenLL>5) {
+				    this.updateGuess(now)
+				} else {
+				    if (this.guess) {
+					this.guess.visible=false;
+				    }
 				}
 				this.marker = this.funcUpdateMarker();
 				PlanesOnMap++;
 			} else {
 				this.vPosition = false;
 			}
+
 
 			// Do we have a valid track for the plane?
 			if (data.validtrack == 1)
@@ -214,7 +368,7 @@ var planeObject = {
 					position: new google.maps.LatLng(this.latitude, this.longitude),
 					map: GoogleMap,
 					icon: this.funcGetIcon(),
-					visable: true
+					visible: true
 				});
 
 				// This is so we can match icao address
@@ -244,7 +398,7 @@ var planeObject = {
 				this.line = new google.maps.Polyline({
 					strokeColor: '#000000',
 					strokeOpacity: 1.0,
-					strokeWeight: 3,
+					strokeWeight: (this.is_selected) ? 3:1,
 					map: GoogleMap,
 					path: this.trackline
 				});

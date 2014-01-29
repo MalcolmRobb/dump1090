@@ -37,10 +37,30 @@ void sigintHandler(int dummy) {
     signal(SIGINT, SIG_DFL);  // reset signal handler - bit extra safety
     Modes.exit = 1;           // Signal to threads that we are done
 }
+
+/* ============================ Terminal handling  ========================== */
+
+
+/* Get the number of rows after the terminal changes size. */
+int getTermRows() {
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    return w.ws_row;
+}
+
+/* Handle resizing terminal. */
+void sigWinchCallback() {
+    signal(SIGWINCH, SIG_IGN);
+    Modes.interactive_rows = getTermRows();
+    interactiveShowData();
+    signal(SIGWINCH, sigWinchCallback);
+}
+
 //
 // =============================== Initialization ===========================
 //
 void modesInitConfig(void) {
+    int i;
     // Default everything to zero/NULL
     memset(&Modes, 0, sizeof(Modes));
 
@@ -54,11 +74,26 @@ void modesInitConfig(void) {
     Modes.net_output_beast_port   = MODES_NET_OUTPUT_BEAST_PORT;
     Modes.net_input_beast_port    = MODES_NET_INPUT_BEAST_PORT;
     Modes.net_http_port           = MODES_NET_HTTP_PORT;
-    Modes.interactive_rows        = MODES_INTERACTIVE_ROWS;
+    Modes.interactive_rows        = getTermRows();;
     Modes.interactive_delete_ttl  = MODES_INTERACTIVE_DELETE_TTL;
     Modes.interactive_display_ttl = MODES_INTERACTIVE_DISPLAY_TTL;
     Modes.fUserLat                = MODES_USER_LATITUDE_DFLT;
     Modes.fUserLon                = MODES_USER_LONGITUDE_DFLT;
+    Modes.interactive_refresh_time= MODES_INTERACTIVE_REFRESH_TIME;
+    Modes.trail_buffsz=MODES_TRAIL_BUFFSZ;
+    Modes.trail_mask=MODES_TRAIL_BUFFSZ-1;
+    Modes.rcv_hgt=0;
+    Modes.rcv_latkm=40008.0/360.0; /* polar curcumference / 360 */
+    Modes.rcv_lonkm=40075.16/360.0; /* equatorial circumference / 360,  Adjusted for lattitude later */
+    Modes.maxrange=calloc(361,sizeof(float));  /* shouldn't get a bearing of 360, but it's not worth a segv */
+    Modes.minele=calloc(361,sizeof(float));  /* shouldn't get a bearing of 360, but it's not worth a segv */
+    for(i=0;i<360;i++) {
+	Modes.maxrange[i]=0.0;
+	Modes.minele[i]=90.0;
+    }
+    Modes.azimuthfile=-1;
+    Modes.azi_refresh_time=600; /* 10 minutes */
+    Modes.azi_last_update=0;
 }
 //
 //=========================================================================
@@ -332,6 +367,99 @@ void snipMode(int level) {
         putchar(q);
     }
 }
+
+//
+// Azimuth file
+//
+#define AZ_BUF (360*80)
+
+int openAzimuthFile(const char * filename) 
+{
+    int fno;
+    int count,i,azimuth;
+    int line;
+    double lat,lon;
+    float range,ele;
+    char buffer[AZ_BUF];
+    char *p;
+    if (!filename || *filename=='\0') {
+        fprintf(stderr,"Empty file name for azimuth file\n");
+        exit(1);
+    }
+    fno=open(filename,O_CREAT|O_RDWR,S_IROTH | S_IWOTH | S_IRGRP | S_IWGRP | S_IWUSR | S_IRUSR);
+    line=0;
+    if (fno<0) {
+        perror(filename);
+        return(-1);
+    }
+    count=read(fno,buffer,AZ_BUF);
+    if (count>0) {
+        if(buffer[0] != '#') {
+            fprintf(stderr,"Non-empty azimuth file '%s' is not an azimuth file.\n",filename);
+            exit(1);
+        }
+        p=buffer+1;
+        line++;
+        if (sscanf(p,"%lf,%lf\n%n",&lat,&lon,&i)<2) {
+            fprintf(stderr,"Non-empty azimuth file '%s' does not parse like an azimuth file.\n",filename);
+            exit(1);
+        }
+        if ((lat != Modes.fUserLat) || (lon  !=Modes.fUserLon)) {
+            fprintf(stderr,"Azimuth file is for reciever position %lf,%lf but reciever set for %lf,%lf.\n",lat,lon,Modes.fUserLat,Modes.fUserLon);
+            exit(1);
+        }
+        p+=i;
+        count-=i;
+    }
+    while(count>5) { // Cannot have valid data in < 5 characters
+        line++;
+        if (sscanf(p,"%d,%f,%f\n%n",&azimuth,&range,&ele,&i)<3) {
+            if (sscanf(p,"%d,%f\n%n",&azimuth,&range,&i)<2) {
+	       fprintf(stderr,"Parse error on line %d of azimuth file\n",line);
+	    } else {
+		Modes.maxrange[azimuth]=range;
+		Modes.minele[azimuth]=90;
+	    }
+        } else {
+            Modes.maxrange[azimuth]=range;
+            Modes.minele[azimuth]=ele;
+        }
+        count-=i;
+        p+=i;
+    }
+    return(fno);
+}
+
+
+void updateAzimuthFile(void)
+{
+    int res; 
+    char buffer[AZ_BUF];
+    int count;
+    int i;
+    count=0;
+    res=lseek(Modes.azimuthfile,0,SEEK_SET);
+    if (res==-1 && errno==EBADF) {
+            Modes.azimuthfile=-1;
+    } else {
+        count+=snprintf(buffer,AZ_BUF-count,"#%lf,%lf\n",Modes.fUserLat,Modes.fUserLon);
+        for(i=0;(i<360 && count>10);i++) {
+            count+=snprintf(buffer+count,AZ_BUF-count,"%d,%.1f,%.2f\n",i,Modes.maxrange[i],Modes.minele[i]);
+        }
+        res=write(Modes.azimuthfile,buffer,count);
+        if (res<0) {
+            perror("Azimuth file");
+        }
+        res=ftruncate(Modes.azimuthfile,count);
+        if (res<0) {
+            perror("Azimuth file");
+        }
+        fsync(Modes.azimuthfile);
+    }
+}
+
+
+
 //
 // ================================ Main ====================================
 //
@@ -349,6 +477,7 @@ void showHelp(void) {
 "--interactive-rows <num> Max number of rows in interactive mode (default: 15)\n"
 "--interactive-ttl <sec>  Remove from list if idle for <sec> (default: 60)\n"
 "--interactive-rtl1090    Display flight table in RTL1090 format\n"
+"--interactive-refresh <ms> Refresh screen every ms miliseconds (default 250)\n"
 "--raw                    Show only messages hex values\n"
 "--net                    Enable networking\n"
 "--modeac                 Enable decoding of SSR Modes 3/A & 3/C\n"
@@ -364,6 +493,10 @@ void showHelp(void) {
 "--net-ro-rate <rate>     TCP raw output memory flush rate (default: 0)\n"
 "--lat <latitude>         Reference/receiver latitide for surface posn (opt)\n"
 "--lon <longitude>        Reference/receiver longitude for surface posn (opt)\n"
+"--receiver-height <alt>  Set altitude of receiver in feet/metres\n"
+"--azimuth <file>         Set file for azimuth data\n"
+"--azimuth-update <sec>	  Minimum time between updating azimuth file (default 600)\n"
+"--trail-buffer <num>  	  Trail buffer <num> numbers per plane. (MODES_TRAIL_ITEMS used per record)\n"
 "--fix                    Enable single-bits error correction using CRC\n"
 "--no-fix                 Disable single-bits error correction using CRC\n"
 "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
@@ -395,7 +528,9 @@ void showHelp(void) {
 // perform tasks we need to do continuously, like accepting new clients
 // from the net, refreshing the screen in interactive mode, and so forth
 //
+
 void backgroundTasks(void) {
+    time_t now;
     if (Modes.net) {
         modesReadFromClients();
     }    
@@ -409,12 +544,25 @@ void backgroundTasks(void) {
     if (Modes.interactive) {
         interactiveShowData();
     }
+
+    // No point checking time() multiple times a second, or if there's nothing new to write.
+    if (Modes.bgLoops++ > 60 && Modes.azimuthfile>=0 && Modes.azi_last_update > Modes.azi_last_write )  {
+	    now=time(NULL);
+	    if ( (now - Modes.azi_last_write) > Modes.azi_refresh_time) 
+	    {
+		updateAzimuthFile();
+		Modes.azi_last_write=now;
+	    }
+	    Modes.bgLoops=0;
+     }
 }
+
 //
 //=========================================================================
 //
 int main(int argc, char **argv) {
     int j;
+    char * azimuthfilename=NULL;
 
     // Set sane defaults
     modesInitConfig();
@@ -482,12 +630,34 @@ int main(int argc, char **argv) {
             Modes.interactive = 1;
         } else if (!strcmp(argv[j],"--interactive-rows") && more) {
             Modes.interactive_rows = atoi(argv[++j]);
+        } else if (!strcmp(argv[j],"--interactive-refresh") && more) {
+            Modes.interactive_refresh_time = atoi(argv[++j]);
+	    if (Modes.interactive_refresh_time<100 || Modes.interactive_refresh_time > 5000) {
+		fprintf(stderr,"Refresh time should be between 100 and 5000 (ms)"); exit(1);
+	    }
         } else if (!strcmp(argv[j],"--interactive-ttl") && more) {
             Modes.interactive_display_ttl = atoi(argv[++j]);
         } else if (!strcmp(argv[j],"--lat") && more) {
             Modes.fUserLat = atof(argv[++j]);
         } else if (!strcmp(argv[j],"--lon") && more) {
             Modes.fUserLon = atof(argv[++j]);
+        } else if (!strcmp(argv[j],"--trail-buffer") && more) {
+            uint32_t sz=atoi(argv[++j]);
+	    if (sz!=0 && sz<(2*MODES_TRAIL_ITEMS)) {
+                fprintf(stderr, "Trail buffer size must be 0 or %d or larger (and a power of 2)\n",2*MODES_TRAIL_ITEMS); exit(1);
+            }
+            if ((sz & (sz-1))) {
+                fprintf(stderr, "Trail buffer size must be power of 2 (256, 512, 1024, etc) or 0\n");
+                exit(1);
+            }
+            Modes.trail_buffsz = sz;
+            Modes.trail_mask=sz-1;
+	} else if (!strcmp(argv[j],"--receiver-height") && more) {
+            Modes.rcv_hgt = atoi(argv[++j]);
+        } else if (!strcmp(argv[j],"--azimuth") && more) {
+            azimuthfilename=strdup(argv[++j]);
+        } else if (!strcmp(argv[j],"--azimuth-update") && more) {
+            Modes.azi_refresh_time = atoi(argv[++j]);
         } else if (!strcmp(argv[j],"--debug") && more) {
             char *f = argv[++j];
             while(*f) {
@@ -531,6 +701,22 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
+
+    /* Setup for SIGWINCH for handling lines */
+    if (Modes.interactive == 1) signal(SIGWINCH, sigWinchCallback);
+
+    // Apply lat & Lon if specified.
+    if ((Modes.fUserLat != 0.0) || (Modes.fUserLon != 0.0)) {
+	Modes.rcv_lonkm*=cos(Modes.fUserLat*M_PI/180.0);
+	if (azimuthfilename) {
+	    time_t now = time(NULL);
+            Modes.azimuthfile = openAzimuthFile(azimuthfilename); 
+            Modes.azi_last_update=now;
+        } 
+    } else if (azimuthfilename) {
+            fprintf(stderr,"Azumuth file ignored as no receiver position set.\n");
+    }
+
 
     // Initialization
     modesInit();
@@ -637,3 +823,5 @@ int main(int argc, char **argv) {
 //
 //=========================================================================
 //
+
+

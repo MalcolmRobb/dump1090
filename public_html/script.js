@@ -11,16 +11,189 @@ var iSortCol=-1;
 var bSortASC=true;
 var bDefaultSortASC=true;
 var iDefaultSortCol=3;
+var Azimuths=[]; /* Azimuth paths */
+var tabSin=[]; /* Lookup array [0-360] for Sin(degrees) */
+var tabCos=[]; /* as above. */
+var latPerNm=1.0/60.0;  /* Approx translation from Nm to delta latitude: Historically 1Nm=1arcMin. This is good enough for guesses */
+var lonPerNm; /* set later, and updated on changes to CenterLat */
+var wait=0;
+var waitsecs=10; // Initial query frequency
+var oldwait=1; // Default query frequency, once page is loaded, assuming no user settings.
+var hidden, visibilityChange;
+var traillen=10000; // How many trail pointes to ask for - initially all.
+var form=null; // HTML form element
+var trailDisplay='clean';
+var trailRemember=true;
+////////////////////////////////////////////////////////////
+// 
+// Alter the update frequency.  Reduces load on server and client machines
+//
+
+// Manual control
+function setfreq(n) {
+    waitsecs=n;
+}
+
+//Automatic update control:
+// If the page is hidden, don't update so often.
+// if the page is shown, restore update frequency
+function handleVisibilityChange() {
+  if (document[hidden]) {
+    oldwait=waitsecs;
+    if (waitsecs<45) {
+	waitsecs=45;
+    }
+  } else {
+    waitsecs=oldwait;
+  }
+}
+
+// Cross-browser shim so we can notice when the page is displayed or not.
+
+if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support 
+  hidden = "hidden";
+  visibilityChange = "visibilitychange";
+} else if (typeof document.mozHidden !== "undefined") {
+  hidden = "mozHidden";
+  visibilityChange = "mozvisibilitychange";
+} else if (typeof document.msHidden !== "undefined") {
+  hidden = "msHidden";
+  visibilityChange = "msvisibilitychange";
+} else if (typeof document.webkitHidden !== "undefined") {
+  hidden = "webkitHidden";
+  visibilityChange = "webkitvisibilitychange";
+}
+
+
+// Handle page visibility change   
+document.addEventListener(visibilityChange, handleVisibilityChange, false);
+
+
 
 // Get current map settings
 CenterLat = Number(localStorage['CenterLat']) || CONST_CENTERLAT;
 CenterLon = Number(localStorage['CenterLon']) || CONST_CENTERLON;
 ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
 
+lonPerNm=latPerNm/Math.sin(CenterLat*3.14159/180) ; /* Very rough translation from Nm to delta longitude.  */
+
+///////////////////////////////////////////////////////////////
+//
+// Overlay of aziumuth plot (maximum range in different directions).
+// Allow several to be plotted (and deleted) so that comparisons can be made
+//
+// First the list control:
+function updateAziList() {
+    var div=document.getElementById("aziplotlist");
+    var fmt="[<span onclick=\"clear_azi(_SEQ_);\">Remove azimuth plot _TITLE_</span>]<br>";
+    var html="";
+    for(var i=Azimuths.length-1; i>=0; i--) {
+    	var fragment=fmt.replace(/_SEQ_/g,i);
+    	html += fragment.replace(/_TITLE_/g,Azimuths[i].title);
+    }
+    div.innerHTML=html;
+}
+
+function clear_azi(n) {
+    if (n>=Azimuths.length) {
+	    n=Azimuths.length-1;
+    }
+    Azimuths[n].line.setMap(null);
+    Azimuths.splice(n,1);
+    updateAziList();
+}
+
+//Callback from JSON call.
+//TODO: alter here and server to include historical plots to be loaded 
+function newazi(data) {
+    var AziCoordinates = [];
+    for (var j=0;j<data.length;j++) {
+	var lat,lon;
+	lat=data[j][0];
+	lon=data[j][1];
+	AziCoordinates.push(new google.maps.LatLng(lat,lon)); 
+    }
+    Azimuths.push( {
+    	line: new google.maps.Polyline({ path: AziCoordinates, strokeColor: "#007f00", strokeOpacity: 1.0, strokeWeight: 1 }),
+	title: new Date().toString(),
+	});
+    Azimuths[Azimuths.length-1].line.setMap(GoogleMap);
+    updateAziList();
+}
+
+function show_azi() {
+    $.getJSON('/azi.json',function(data) {newazi(data)} );
+}
+
+
+
+////////////////////////////////////////////////////
+//
+// Manual hide / clean up of tracks from vanished and active planes
+//
+
+
+function hide_tracks() {
+    if (deadPaths.length) {
+	for(var i=deadPaths.length-1; i>=0; i--) {
+	    deadPaths[i].setMap(null);
+	}
+    }
+}
+
+function cleanup_tracks() {
+    if (deadPaths.length) {
+	for(var i=deadPaths.length-1; i>=0; i--) {
+	    deadPaths[i].setMap(null);
+	    deadPaths[i]=null;
+	}
+    }
+    deadPaths.length=0;
+    for(var p in Planes) {
+	if (Planes[p].line) {
+	    Planes[p].line.setMap(null);
+	}
+    }
+
+}
+
+// What trail data do we want to fetch from ffetchData?
+function getFetchOptions() {
+	var arg="";
+	if (!form) {
+			form=document.getElementById("option_form");
+	}
+	var eles=form.elements;
+	var mode;
+	mode= eles['trailmode'].value;
+	if (mode=="off") {
+		arg="";
+		traillen=10000;
+	} else if (mode=="selected") {
+		if (typeof SelectedPlane !== 'undefined' && SelectedPlane != "ICAO" && SelectedPlane != null) {
+			arg=SelectedPlane;
+			if (traillen<900)  {
+				arg="?" + traillen+","+SelectedPlane;
+			}
+			traillen=2+wait; // Enough positions to hopefully avoid gaps, but not silly quantities of useless data
+		} 
+	} else { //All planes
+		arg="?*";
+		if (traillen<900)  {
+			arg="?" + traillen+",*";
+		}
+		traillen=2+wait;
+	}
+	return(arg);
+}
+
 function fetchData() {
-	$.getJSON('/dump1090/data.json', function(data) {
+	var url='/dump1090/data.json' + getFetchOptions();
+	//console.log(url);
+	$.getJSON(url, function(data) {
 		PlanesOnMap = 0
 		SpecialSquawk = false;
+		var now=new Date().getTime();
 		
 		// Loop through all the planes in the data packet
 		for (var j=0; j < data.length; j++) {
@@ -43,7 +216,7 @@ function fetchData() {
             }
 
 			// Call the function update
-			plane.funcUpdateData(data[j]);
+			plane.funcUpdateData(data[j],now);
 			
 			// Copy the plane into Planes
 			Planes[plane.icao] = plane;
@@ -158,6 +331,7 @@ function initialize() {
     google.maps.event.addListener(GoogleMap, 'center_changed', function() {
         localStorage['CenterLat'] = GoogleMap.getCenter().lat();
         localStorage['CenterLon'] = GoogleMap.getCenter().lng();
+		lonPerNm=latPerNm/Math.sin(CenterLat*3.14159/180) ; /* Very rough translation from Nm to delta longitude.  */
     });
     
     google.maps.event.addListener(GoogleMap, 'zoom_changed', function() {
@@ -186,11 +360,38 @@ function initialize() {
             }
         }
 	}
+
+	/* Populate the lookup tables */
+	var deg=3.14159/180;
+	for(var i=89;--i;) {
+		var sinI=Math.sin(i*deg);
+		tabSin[180-i]=tabSin[i]=sinI;
+		tabSin[360-i]=tabSin[i+180]=-sinI;
+		tabCos[90-i]=tabCos[270+i]=sinI;
+		tabCos[i+90]=tabCos[270-i]=-sinI;
+	}
+	/* endpoints */
+	tabCos[90]=tabCos[270]=tabSin[0]=tabSin[360]=tabSin[180]=0;
+	tabCos[0]=tabCos[360]=tabSin[90]=1;
+	tabSin[270]=tabCos[180]-1;
+
+    	funcOptionsChanged(); // check current options. 
 	
 	// These will run after page is complitely loaded
 	$(window).load(function() {
-        $('#dialog-modal').css('display', 'inline'); // Show hidden settings-windows content
-    });
+	    $('#dialog-modal').css('display', 'inline'); // Show hidden settings-windows content
+	});
+
+	// After an initial page load time, set waitsecs to the normal value
+	setTimeout(function() {
+	    if (!form) {
+		form=document.getElementById("option_form");
+	    }
+	    if ( +form.elements['updfreq'].value) {
+		oldwait= +form.elements['updfreq'].value;
+	    }
+	    waitsecs=oldwait;
+	},5000);
 
 	// Load up our options page
 	optionsInitalize();
@@ -200,11 +401,15 @@ function initialize() {
 	
 	// Setup our timer to poll from the server.
 	window.setInterval(function() {
+	    wait++;
+	    if (wait >= waitsecs) {
 		fetchData();
+		wait=0;
 		refreshTableInfo();
 		refreshSelected();
 		reaper();
 		extendedPulse();
+	    }
 	}, 1000);
 }
 
@@ -212,7 +417,7 @@ function initialize() {
 function reaper() {
 	PlanesToReap = 0;
 	// When did the reaper start?
-	reaptime = new Date().getTime();
+	var reaptime = new Date().getTime();
 	// Loop the planes
 	for (var reap in Planes) {
 		// Is this plane possibly reapable?
@@ -222,6 +427,27 @@ function reaper() {
 			// Due to loss of signal or other reasons
 			if ((reaptime - Planes[reap].updated) > 300000) {
 				// Reap it.
+				plane=Planes[reap];
+				if (plane.guess) {
+					plane.guess.setMap(null);
+					plane.guess=null;
+				}
+				if (plane.line) {
+			     	    // Unlikely to reach here with trailDisplay!=showall, but just in case..
+				    plane.line.setOptions({strokeColor: "#7f0000", map:(trailDisplay=='showall')?GoogleMap:null});
+				    deadPaths.push(plane.line);
+				    plane.line=null;
+				} else { 
+			            if (trailRemember) {
+					deadPaths.push(new google.maps.Polyline({
+					    strokeColor: '#7f0000',
+					    strokeOpacity: 1.0,
+					    strokeWeight: 1,
+					    map: (trailDisplay=='showall')?GoogleMap:null,
+					    path: plane.trackline
+					}));
+				    }
+				}
 				delete Planes[reap];
 			}
 			PlanesToReap++;
@@ -232,7 +458,7 @@ function reaper() {
 // Refresh the detail window about the plane
 function refreshSelected() {
     var selected = false;
-	if (typeof SelectedPlane !== 'undefined' && SelectedPlane != "ICAO" && SelectedPlane != null) {
+	if (typeof SelectedPlane !== 'undefined' && SelectedPlane != "ICAO" && SelectedPlane != null && Planes[SelectedPlane]) {
     	selected = Planes[SelectedPlane];
     }
 	
@@ -404,7 +630,13 @@ function refreshTableInfo() {
 	html += '<td onclick="setASC_DESC(\'6\');sortTable(\'tableinfo\',\'6\');" ' +
 	    'align="right">Msgs</td>';
 	html += '<td onclick="setASC_DESC(\'7\');sortTable(\'tableinfo\',\'7\');" ' +
-	    'align="right">Seen</td></thead><tbody>';
+	    'align="right">Seen</td>';
+	html += '<td onclick="setASC_DESC(\'8\');sortTable(\'tableinfo\',\'7\');" ' +
+	    'align="right">Azi</td>';
+	html += '<td onclick="setASC_DESC(\'9\');sortTable(\'tableinfo\',\'7\');" ' +
+	    'align="right">Ele</td>';
+	html += '<td onclick="setASC_DESC(\'10\');sortTable(\'tableinfo\',\'7\');" ' +
+	    'align="right">Range</td></thead><tbody>';
 	for (var tablep in Planes) {
 		var tableplane = Planes[tablep]
 		if (!tableplane.reapable) {
@@ -458,6 +690,9 @@ function refreshTableInfo() {
     	    html += '</td>';
 			html += '<td align="right">' + tableplane.messages + '</td>';
 			html += '<td align="right">' + tableplane.seen + '</td>';
+			html += '<td align="right">' + tableplane.bearing + '</td>';
+			html += '<td align="right">' + tableplane.elevation + '</td>';
+			html += '<td align="right">' + tableplane.range + '</td>';
 			html += '</tr>';
 		}
 	}
@@ -548,15 +783,75 @@ function sortTable(szTableID,iCol) {
 	aStore=null;
 }
 
+function funcOptionsChanged() {
+    if (!form) {
+	    form=document.getElementById("option_form");
+    }
+    trailDisplay=form.elements['traildisplay'].value;
+    if (form.elements['remember']) {
+	trailRemember=form.elements['remember'].value;
+    } else {
+	trailRemember=true;
+    }
+    if (trailDisplay=='showall') {
+	trailRemember=true;
+    }
+    var cbHTML="<input type=checkbox name=remember value=1 " + (trailRemember?'checked':'') + "> Remember trails for planes that go off scope";
+    var div=document.getElementById("extratrailoption");
+    if (trailDisplay=='selected')  {
+        traillen=10000; /* ask for everything next update */
+	div.innerHTML=cbHTML;
+	for(var p in Planes) {
+	    if (!Planes[p].is_selected) {
+		    Planes[p].funcClearLine();
+	    } else {
+	    	Planes[p].funcShowLine();
+	    }
+	}
+	for(var t=deadPaths.length-1;t>=0; t--) {
+	    deadPaths[t].setMap(none);
+	}
+    } else if (trailDisplay=='clean') { // Only active planes.
+	div.innerHTML=cbHTML;
+        for(var p in Planes) {
+	    if (Planes[p].reapable) {
+		Planes[p].funcClearLine();
+	    } else {
+		Planes[p].funcShowLine();
+	    } 
+	}
+	for(var t=deadPaths.length-1;t>=0; t--) {
+	    deadPaths[t].setMap(null);
+	}
+    } else { // trailDisplay=='showall' : Show all planes AND deadPaths
+	div.innerHTML='[<span onclick="hide_tracks()">Hide oldest tracks</span>]<br>[<span onclick="cleanup_tracks()">Clean up inactive tracks</span>]<BR>';
+	for(var p in Planes) {
+	    if (!Planes[p].line) {
+		Planes[p].funcShowLine();	
+	    } 
+	}
+	for(var t=deadPaths.length-1;t>=0; t--) {
+	    deadPaths[t].setMap(GoogleMap);
+	}
+    }
+}
+
 function selectPlaneByHex(hex) {
 	// If SelectedPlane has something in it, clear out the selected
-	if (SelectedPlane != null) {
+	if (SelectedPlane != null && Planes[SelectedPlane]) {
 		Planes[SelectedPlane].is_selected = false;
-		Planes[SelectedPlane].funcClearLine();
+		if (form.elements['traildisplay'].value == 'selected') {
+			Planes[SelectedPlane].funcClearLine();
+		} else {
+			Planes[SelectedPlane].funcDeselectLine();
+		}
 		Planes[SelectedPlane].markerColor = MarkerColor;
 		// If the selected has a marker, make it not stand out
 		if (Planes[SelectedPlane].marker) {
 			Planes[SelectedPlane].marker.setIcon(Planes[SelectedPlane].funcGetIcon());
+		}
+		if (Planes[SelectedPlane].guess) {
+			Planes[SelectedPlane].guess.setIcon(Planes[SelectedPlane].getIconForGuess());
 		}
 	}
 
@@ -569,6 +864,9 @@ function selectPlaneByHex(hex) {
 		if (Planes[SelectedPlane].marker) {
 			Planes[SelectedPlane].funcUpdateLines();
 			Planes[SelectedPlane].marker.setIcon(Planes[SelectedPlane].funcGetIcon());
+		}
+		if (Planes[SelectedPlane].guess) {
+			Planes[SelectedPlane].guess.setIcon(Planes[SelectedPlane].getIconForGuess());
 		}
 	} else { 
 		SelectedPlane = null;
@@ -587,6 +885,7 @@ function resetMap() {
     CenterLat = Number(localStorage['CenterLat']) || CONST_CENTERLAT;
     CenterLon = Number(localStorage['CenterLon']) || CONST_CENTERLON;
     ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
+    lonPerNm=latPerNm/Math.sin(CenterLat*3.14159/180) ; /* Very rough translation from Nm to delta longitude.  */
     
     // Set and refresh
 	GoogleMap.setZoom(parseInt(ZoomLvl));
