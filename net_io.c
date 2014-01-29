@@ -783,7 +783,7 @@ int handleHTTPRequest(struct client *c, char *p) {
     // "/" -> Our google map application.
     // "/data.json" -> Our ajax request to update planes.
     // "/azi.json" -> ajax request for azimuth data
-    // "/config2.js" -> runtime configuration
+    // "/runtime.js" -> runtime configuration
     char * start;
 
     if ( (start=strstr(url, "/data.json"))!=0 ) {

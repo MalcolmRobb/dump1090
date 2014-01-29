@@ -324,6 +324,7 @@ struct {                             // Internal state
     // Interactive mode
     struct aircraft *aircrafts;
     uint64_t         interactive_last_update; // Last screen update in milliseconds
+    uint         interactive_refresh_time; // Screen update interval (milliseconds)
 
     // Statistics
     unsigned int stat_valid_preamble;

@@ -838,7 +838,7 @@ function funcOptionsChanged() {
 
 function selectPlaneByHex(hex) {
 	// If SelectedPlane has something in it, clear out the selected
-	if (SelectedPlane != null && Planes[SelectedPlane && Planes[SelectedPlane]]) {
+	if (SelectedPlane != null && Planes[SelectedPlane]) {
 		Planes[SelectedPlane].is_selected = false;
 		if (form.elements['traildisplay'].value == 'selected') {
 			Planes[SelectedPlane].funcClearLine();

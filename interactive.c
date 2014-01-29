@@ -338,8 +338,8 @@ void interactiveShowData(void) {
     char progress;
     char spinner[4] = "|/-\\";
 
-    // Refresh screen every (MODES_INTERACTIVE_REFRESH_TIME) miliseconde
-    if ((mstime() - Modes.interactive_last_update) < MODES_INTERACTIVE_REFRESH_TIME)
+    // Refresh screen every (Modes.interactive_refresh_time) miliseconde
+    if ((mstime() - Modes.interactive_last_update) < Modes.interactive_refresh_time)
        {return;}
 
     Modes.interactive_last_update = mstime();    

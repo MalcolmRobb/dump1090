@@ -79,6 +79,7 @@ void modesInitConfig(void) {
     Modes.interactive_display_ttl = MODES_INTERACTIVE_DISPLAY_TTL;
     Modes.fUserLat                = MODES_USER_LATITUDE_DFLT;
     Modes.fUserLon                = MODES_USER_LONGITUDE_DFLT;
+    Modes.interactive_refresh_time= MODES_INTERACTIVE_REFRESH_TIME;
     Modes.trail_buffsz=MODES_TRAIL_BUFFSZ;
     Modes.trail_mask=MODES_TRAIL_BUFFSZ-1;
     Modes.rcv_hgt=0;
@@ -476,6 +477,7 @@ void showHelp(void) {
 "--interactive-rows <num> Max number of rows in interactive mode (default: 15)\n"
 "--interactive-ttl <sec>  Remove from list if idle for <sec> (default: 60)\n"
 "--interactive-rtl1090    Display flight table in RTL1090 format\n"
+"--interactive-refresh <ms> Refresh screen every ms miliseconds (default 250)\n"
 "--raw                    Show only messages hex values\n"
 "--net                    Enable networking\n"
 "--modeac                 Enable decoding of SSR Modes 3/A & 3/C\n"
@@ -491,6 +493,10 @@ void showHelp(void) {
 "--net-ro-rate <rate>     TCP raw output memory flush rate (default: 0)\n"
 "--lat <latitude>         Reference/receiver latitide for surface posn (opt)\n"
 "--lon <longitude>        Reference/receiver longitude for surface posn (opt)\n"
+"--receiver-height <alt>  Set altitude of receiver in feet/metres\n"
+"--azimuth <file>         Set file for azimuth data\n"
+"--azimuth-update <sec>	  Minimum time between updating azimuth file (default 600)\n"
+"--trail-buffer <num>  	  Trail buffer <num> numbers per plane. (MODES_TRAIL_ITEMS used per record)\n"
 "--fix                    Enable single-bits error correction using CRC\n"
 "--no-fix                 Disable single-bits error correction using CRC\n"
 "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
@@ -624,6 +630,11 @@ int main(int argc, char **argv) {
             Modes.interactive = 1;
         } else if (!strcmp(argv[j],"--interactive-rows") && more) {
             Modes.interactive_rows = atoi(argv[++j]);
+        } else if (!strcmp(argv[j],"--interactive-refresh") && more) {
+            Modes.interactive_refresh_time = atoi(argv[++j]);
+	    if (Modes.interactive_refresh_time<100 || Modes.interactive_refresh_time > 5000) {
+		fprintf(stderr,"Refresh time should be between 100 and 5000 (ms)"); exit(1);
+	    }
         } else if (!strcmp(argv[j],"--interactive-ttl") && more) {
             Modes.interactive_display_ttl = atoi(argv[++j]);
         } else if (!strcmp(argv[j],"--lat") && more) {
