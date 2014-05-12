@@ -430,6 +430,15 @@ void modesSendSBSOutput(struct modesMessage *mm) {
 //=========================================================================
 //
 void modesQueueOutput(struct modesMessage *mm) {
+    // local mod: ITM filter mode
+    uint32_t addr;
+    
+    addr = mm->addr;
+    if ((addr >= 0x87a0d8) && (addr <= 0x87a0db)) {
+    	return;
+    }
+    // ITM filter mode ends
+
     if (Modes.stat_sbs_connections)   {modesSendSBSOutput(mm);}
     if (Modes.stat_beast_connections) {modesSendBeastOutput(mm);}
     if (Modes.stat_raw_connections)   {modesSendRawOutput(mm);}
