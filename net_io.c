@@ -430,14 +430,25 @@ void modesSendSBSOutput(struct modesMessage *mm) {
 //=========================================================================
 //
 void modesQueueOutput(struct modesMessage *mm) {
+#ifdef ITM_FILTER
     // local mod: ITM filter mode
+    // This patch is to prevent external feeding of
+    // the stations in a range of ICAO 24-bit address;
+    // The range hardcoded below is for
+    // Osaka Int'l Airport (ITM/RJOO) and vicinity,
+    // where you can receive the regular transponder traffic
+    // of the ID range 0x87d0a8 to 0x87d0ab,
+    // which takes about 30% to 40% of all receiving frames.
     uint32_t addr;
-    
+
     addr = mm->addr;
+    // do nothing when ICAO 24-bit address are in the
+    // range between 0x87d0a8 to 0x87d0ab
     if ((addr >= 0x87a0d8) && (addr <= 0x87a0db)) {
-    	return;
+        return;
     }
     // ITM filter mode ends
+#endif // ITM_FILTER
 
     if (Modes.stat_sbs_connections)   {modesSendSBSOutput(mm);}
     if (Modes.stat_beast_connections) {modesSendBeastOutput(mm);}
