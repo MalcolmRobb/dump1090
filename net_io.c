@@ -606,6 +606,8 @@ char *aircraftsToJson(int *len) {
     while(a) {
         int position = 0;
         int track = 0;
+		int altitude = 0;
+		int speed = 0;
 
         if (a->modeACflags & MODEAC_MSG_FLAG) { // skip any fudged ICAO records Mode A/C
             a = a->next;
@@ -620,13 +622,21 @@ char *aircraftsToJson(int *len) {
             track = 1;
         }
         
+        if ((a->bFlags & MODES_ACFLAGS_ALTITUDE_VALID) || (a->bFlags & MODES_ACFLAGS_AOG_VALID)) {
+			altitude = (((a->bFlags & MODES_ACFLAGS_AOG_GROUND) == MODES_ACFLAGS_AOG_GROUND) ? -1 : 1);
+        }
+        
+        if (a->bFlags & MODES_ACFLAGS_SPEED_VALID) {
+            speed = 1;
+        }
+        
         // No metric conversion
         l = snprintf(p,buflen,
             "{\"hex\":\"%06x\", \"squawk\":\"%04x\", \"flight\":\"%s\", \"lat\":%f, "
-            "\"lon\":%f, \"validposition\":%d, \"altitude\":%d,  \"vert_rate\":%d,\"track\":%d, \"validtrack\":%d,"
-            "\"speed\":%d, \"messages\":%ld, \"seen\":%d},\n",
-            a->addr, a->modeA, a->flight, a->lat, a->lon, position, a->altitude, a->vert_rate, a->track, track,
-            a->speed, a->messages, (int)(now - a->seen));
+            "\"lon\":%f, \"validposition\":%d, \"altitude\":%d, \"validaltitude\":%d, \"vert_rate\":%d,\"track\":%d, \"validtrack\":%d,"
+            "\"speed\":%d, \"validspeed\":%d, \"messages\":%ld, \"seen\":%d},\n",
+            a->addr, a->modeA, a->flight, a->lat, a->lon, position, a->altitude, altitude, a->vert_rate, a->track, track,
+            a->speed, speed, a->messages, (int)(now - a->seen));
         p += l; buflen -= l;
         
         //Resize if needed
@@ -690,7 +700,7 @@ int handleHTTPRequest(struct client *c, char *p) {
         keepalive = strstr(p, "Connection: close") == NULL;
     }
 
-    // Identify he URL.
+    // Identify the URL.
     p = strchr(p,' ');
     if (!p) return 1; // There should be the method and a space
     url = ++p;        // Now this should point to the requested URL

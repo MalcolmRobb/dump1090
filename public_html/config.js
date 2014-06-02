@@ -15,6 +15,8 @@ CONST_CENTERLAT = 45.0;
 CONST_CENTERLON = 9.0;
 // The google maps zoom level, 0 - 16, lower is further out
 CONST_ZOOMLVL   = 5;
+// The Openstreetmap tile URL template
+OsmTileUrlFormat	= 'http://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // -- Marker settings -------------------------------------
 // The default marker color
@@ -31,3 +33,9 @@ SiteCircles = true; // true or false (Only shown if SiteShow is true)
 // In nautical miles or km (depending settings value 'Metric')
 SiteCirclesDistances = new Array(100,150,200);
 
+// -- Plane Settings -------------------------------------
+PlaneTtl		= 58; // remove from list if plane was not seen for <sec>
+PlaneDeleteTtl	= 300; // remove plane from memory if not seen for <sec>
+
+// -- Server Settings -------------------------------------
+AjaxPlanesUrl	= '/dump1090/data.json';

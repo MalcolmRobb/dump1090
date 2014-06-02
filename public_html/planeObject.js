@@ -20,9 +20,11 @@ var planeObject = {
 	messages	: null,
 	seen		: null,
 
-	// Vaild...
+	// Valid...
 	vPosition	: false,
 	vTrack		: false,
+	vAltitude	: false,
+	vSpeed		: false,
 
 	// GMap Details
 	marker		: null,
@@ -123,6 +125,38 @@ var planeObject = {
 			selectPlaneByHex(this.icao);
 		},
 
+	// Clear plane from being displayed on map
+	funcClearPlaneDisplay	: function(){
+			if (this.marker) {
+				this.marker.setMap(null);
+				this.marker = null;
+			}
+			if (this.line) {
+				this.line.setMap(null);
+				this.line = null;
+			}
+			if (SelectedPlane == this.icao) {
+				if (this.is_selected) {
+					this.is_selected = false;
+					this.markerColor = MarkerColor;
+				}
+				SelectedPlane = null;
+			}
+		},
+
+
+	// For planes from whom we did not get data lately
+	funcUpdateOldPlane	: function(){
+			var ms = new Date().getTime();
+			var seen = Math.round((ms - this.updated) / 1000);
+			if (seen > PlaneTtl){
+				this.reapable = true;
+				this.funcClearPlaneDisplay();
+			}
+			this.seen = seen;
+		},
+		
+
 	// Update our data
 	funcUpdateData	: function(data){
 			// So we can find out if we moved
@@ -132,35 +166,30 @@ var planeObject = {
 
 			// Update all of our data
 			this.updated	= new Date().getTime();
-			this.altitude	= data.altitude;
-			this.speed	= data.speed;
-			this.track	= data.track;
-			this.latitude	= data.lat;
-			this.longitude	= data.lon;
-			this.flight	= data.flight;
-			this.squawk	= data.squawk;
 			this.icao	= data.hex;
 			this.messages	= data.messages;
 			this.seen	= data.seen;
 
-			// If no packet in over 58 seconds, consider the plane reapable
+			var updVal = function(t, d, fn, n, dn){
+				var dna = (typeof(dn) === 'undefined' ? n : dn);
+				if (fn(d, t[n], d[dna], t[n])){
+					t[n]=d[dna];
+				}
+			};
+			// Update these if they are being initialized, or if they contain valid data
+			updVal(this, data, function(d, tn){return (tn === null || d.validaltitude !== 0);}, 'altitude');
+			updVal(this, data, function(d, tn){return (tn === null || d.validspeed !== 0);}, 'speed');
+			updVal(this, data, function(d, tn){return (tn === null || d.validtrack !== 0);}, 'track');
+			updVal(this, data, function(d, tn){return (tn === null || d.validposition !== 0);}, 'latitude', 'lat');
+			updVal(this, data, function(d, tn){return (tn === null || d.validposition !== 0);}, 'longitude', 'lon');
+			updVal(this, data, function(d, tn, dn){return (tn === null || dn !== '');}, 'flight');
+			updVal(this, data, function(d, tn, dn){return (tn === null || dn !== "0000");}, 'squawk');
+
+			// If no packet in over <PlaneTtl> seconds, consider the plane reapable
 			// This way we can hold it, but not show it just in case the plane comes back
-			if (this.seen > 58) {
+			if (this.seen > PlaneTtl) {
 				this.reapable = true;
-				if (this.marker) {
-					this.marker.setMap(null);
-					this.marker = null;
-				}
-				if (this.line) {
-					this.line.setMap(null);
-					this.line = null;
-				}
-				if (SelectedPlane == this.icao) {
-					if (this.is_selected) {
-						this.is_selected = false;
-					}
-					SelectedPlane = null;
-				}
+				this.funcClearPlaneDisplay();
 			} else {
 				if (this.reapable == true) {
 				}
@@ -171,7 +200,7 @@ var planeObject = {
 			if ((data.validposition == 1) && (this.reapable == false)) {
 				this.vPosition = true;
 
-				// Detech if the plane has moved
+				// Detect if the plane has moved
 				changeLat = false;
 				changeLon = false;
 				changeAlt = false;
@@ -202,6 +231,12 @@ var planeObject = {
 				this.vTrack = true;
 			else
 				this.vTrack = false;
+
+			this.vSpeed = (data.validspeed === 1 || data.validspeed === true);
+			this.vAltitude = ((data.validaltitude === 1 || data.validaltitude === true) ? true : (data.validaltitude === -1 ? '' : false));
+			if (this.vAltitude === ''){
+				this.altitude = 'grnd';
+			}
 		},
 
 	// Update our marker on the map
@@ -214,7 +249,7 @@ var planeObject = {
 					position: new google.maps.LatLng(this.latitude, this.longitude),
 					map: GoogleMap,
 					icon: this.funcGetIcon(),
-					visable: true
+					visible: true
 				});
 
 				// This is so we can match icao address

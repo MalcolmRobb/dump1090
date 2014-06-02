@@ -1,7 +1,7 @@
 // -----------------------------------------------------
 //
 // This file is so users can modify how the page acts
-// without diving to deep in the code.  This way we can
+// without diving too deep in the code.  This way we can
 // also try out or hold custom code for ourselves and
 // not check it into the repo.
 //
