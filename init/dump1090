@@ -1,6 +1,10 @@
 #!/bin/bash
 ### BEGIN INIT INFO
 #
+# chkconfig: 2345 80 30 
+# description: Dump1090 service
+#
+#
 # Provides:		dump1090
 # Required-Start:	$remote_fs
 # Required-Stop:	$remote_fs
@@ -12,35 +16,35 @@
 ### END INIT INFO
 ## Fill in name of program here.
 PROG="dump1090"
-PROG_PATH="/home/pi/dump1090"
 PROG_ARGS="--quiet --net --net-ro-size 500 --net-ro-rate 5 --net-buffer 5"
 PIDFILE="/var/run/dump1090.pid"
+LOGFILE="/dev/null"
 
 start() {
       if [ -e $PIDFILE ]; then
-          ## Program is running, exit with error.
-          echo "Error! $PROG is currently running!" 1>&2
-          exit 1
+	  PID_TEST=`cat $PIDFILE`
+	  if [ "$PID_TEST" -eq `pidof $PROG` ]
+	    ## Program is running, exit with error.
+            echo "Error! $PROG is currently running!" 1>&2
+            exit 1
+	  fi
       else
           ## Change from /dev/null to something like /var/log/$PROG if you want to save output.
-          cd $PROG_PATH
-          ./$PROG $PROG_ARGS 2>&1 >/dev/null &
+          $PROG $PROG_ARGS 2>&1 >$LOGFILE &
+	  pidof $PROG > $PIDFILE
           echo "$PROG started"
-          touch $PIDFILE
       fi
 }
 
 stop() {
       if [ -e $PIDFILE ]; then
-          ## Program is running, so stop it
-         echo "$PROG is running"
-         killall $PROG
-         rm -f $PIDFILE
-         echo "$PROG stopped"
-      else
-          ## Program is not running, exit with error.
-          echo "Error! $PROG not started!" 1>&2
-          exit 1
+	 PID_TEST=`cat $PIDFILE`
+	 if [ "$PID_TEST" -eq `pidof $PROG` ]
+           ## Program is running, so stop it
+           kill $PID_TEST
+           rm -f $PIDFILE
+           echo "$PROG stopped"
+	 fi
       fi
 }
 
