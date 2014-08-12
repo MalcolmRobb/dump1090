@@ -34,8 +34,14 @@ view1090: view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
 clean:
 	rm -f *.o dump1090 ppup1090 view1090
 
-install:
+install: installbin installhtml
+
+installbin:
 	install -m755 dump1090 $(BINDIR)
 	install -m755 ppup1090 $(BINDIR)
 	install -m755 view1090 $(BINDIR)
-	install -m644 public_html $(SHAREDIR)
+
+installhtml:
+	install -d -m 755 $(SHAREDIR)
+	cp -R public_html/* $(SHAREDIR)
+
