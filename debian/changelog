@@ -1,4 +1,12 @@
-dump1090 (1.09.0608.14-1) unstable; urgency=low
+dump1090 (1.09.0608.14-2) UNRELEASED; urgency=low
+
+  * Add man pages per Debian Policy.
+  * Patch Makefile to only build the Planeplotter uploader on supported
+    architectures.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Sun, 17 Aug 2014 17:13:57 +0000
+
+dump1090 (1.09.0608.14-1) UNRELEASED; urgency=low
 
   * Initial release 
 

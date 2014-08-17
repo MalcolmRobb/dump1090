@@ -1,4 +1,0 @@
-binary-without-manpage usr/sbin/dump1090
-binary-without-manpage usr/sbin/ppup1090
-binary-without-manpage usr/bin/view1090
-new-package-should-close-itp-bug

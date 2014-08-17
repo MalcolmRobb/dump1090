@@ -5,6 +5,8 @@ Maintainer: Matthew Ernisse <mernisse@ub3rgeek.net>
 Build-Depends: debhelper (>= 8.0.0), dpkg-dev (>= 1.16.1~), pkg-config, librtlsdr0-dev
 Standards-Version: 3.9.3
 Homepage: https://github.com/MalcolmRobb/dump1090
+Vcs-Git: https://github.com/MalcolmRobb/dump1090.git
+Vcs-Browser: https://github.com/MalcolmRobb/dump1090
 
 Package: dump1090
 Architecture: any

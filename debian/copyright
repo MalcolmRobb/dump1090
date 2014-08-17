@@ -3,8 +3,8 @@ Upstream-Name: dump1090
 Source: https://github.com/MalcolmRobb/dump1090
 
 Files: *
-Copyright: 2009-2013 Salvatore Sanfilippo <antirez@gmail.com>
-           2013-2014 Malcom Robb
+Copyright: 2012 Salvatore Sanfilippo <antirez@gmail.com>
+           2014 Malcolm Robb <support@attavionics.com>
 License: BSD-3-Clause
 
 Files: debian/*
