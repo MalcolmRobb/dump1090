@@ -1,0 +1,3223 @@
+# Generated with: git log --pretty=format:"Commit: %h%n%B%N%n%aN <%ae>%n%n"
+Commit: a82df07
+Version 1.09.0608.14
+
+Release of COAA PlanePlotter MLAT and SMU support for RPi
+
+ppup1090 now supports Ground Stations functions required for MLAT and
+SMU operation. This is *ONLY* available for RPi and similar linux
+hardware.
+
+Also included are sample startup scripts for dump1090 only and
+dump1090+ppup1090 together.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 90fa1da
+net_io port 30003 bug
+
+Thanks to "Harrie" for this one.
+Fix the SBS port 30003 stream to always include speed and/or heading
+when available.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f1b85ec
+Tidy up interactive.c
+
+Remove spaces from the end of line.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 845289a
+Version 1.09.1607.14
+
+Improvements to COAA MLAT functions
+Reduce CPU load in PPUP1090 and DUMP1090 during cleanup
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8b05286
+Version 1.09.1007.14
+
+Updates to support COAA Planeplotter Ground Station on an RPi
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: a17e5b0
+Merge pull request #23 from hhm0/decoding
+
+use last recent airplane position to calculate its ground position
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: d1b37ad
+B"H decoding: use last air position to calculate ground position
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: 60e2c92
+Merge pull request #21 from hhm0/view1090_net_mods
+
+View1090 net mods
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: f68ae55
+Merge pull request #22 from matthewbrandes/master
+
+Allows choosing device by serial number rather than device index which can change.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 6f14ecf
+Update dump1090.c
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: c805822
+Delete convienience.c
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: 3043e86
+Delete convienience.h
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: 652af93
+Update dump1090.c
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: d020756
+Update dump1090.c
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: a190677
+Create convienience.c
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: 50b05c5
+Create convienience.h
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: 8110549
+Update dump1090.c
+matthewbrandes <matthewb@report4u.net>
+
+
+Commit: a86eb7a
+B"H view1090: do not use pthreads
+
+It *seems* that pthreads are used in dump1090 for I/! sample reading
+only. So view1090 need not use pthread_exit.
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: ec09cc7
+B"H view1090: sleep a bit between loops
+
+view1090 was using close to 100% CPU before, with the non-blocking
+commits and the reconnection code. sleep a bit between loop iterations
+to keep CPU usage low.
+
+CPU usage with this addition was down to <1% in testing.
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: 350a57f
+B"H view1090: do not block
+
+ - do not block on network data
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: 96015e3
+B"H view1090: handle disconnection
+
+ - keep trying to reconnect to server if disconnected
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: c0d6ea0
+Merge pull request #20 from hhm0/network_disabling
+
+make network services disable-able
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 190a746
+Merge pull request #19 from hhm0/decoding
+
+decode more squawk codes
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 59984ac
+B"H allow disable ports, doc disable net heartbeat
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: 506be6e
+B"H decode more data, etc.
+
+- decodes a bit more information
+- misc. small changes
+
+hhm <heehooman+vcs-ci@gmail.com>
+
+
+Commit: 189e726
+Merge pull request #16 from papasven/master
+
+Incorrect value for auto-gain
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: e6c4338
+Incorrect value for auto-gain
+
+Incorrect value for auto-gain option the Modes.gain is multiplied by 10.
+papasven <sven.haendel@arcor.de>
+
+
+Commit: 6afdc9b
+Merge remote-tracking branch 'origin/Debug'
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 903f93f
+Publish Version 1.08.2705.14
+
+A few minor additions and bug fixes as detailed below
+
+1) Additional command line option "--net-buffer <n>" to specify the TCP
+output buffer size. Default is n=0, which is 64Kb. Specify a value of n
+to increase the buffer size according to  Size  = 64Kb * 2^n, so an n of
+1 = 128Kb, n=2 is 256Kb etc. n is limited to 7, so the max size is 8Mb.
+This option may assist if you have a high number of aircraft being
+received, and an unreliable network connection, or if the receiving end
+can be busy for an extended time.
+
+2) Bug fix in ppup1090 which prevented the uploading of valid
+ModeA/Squawk codes
+
+3) Bug fix per Markus Grab's commit.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 00533e7
+Fixed: now skipping correct number of values in magnitude buffer
+
+Variable j points to the current location in the magnitude vector.
+When decoding a message  (MODES_PREAMBLE_US+msglen)*2 is added to j.
+In the loop head j is increased by 1, so one value was skipped.
+
+Markus Gräb <m_graeb11@cs.uni-kl.de>
+
+
+Commit: dfb3191
+Merge pull request #14 from kopppa91/master
+
+Fixed: now skipping correct number of values in magnitude buffer
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 583f242
+Fixed: now skipping correct number of values in magnitude buffer
+
+Variable j points to the current location in the magnitude vector.
+When decoding a message  (MODES_PREAMBLE_US+msglen)*2 is added to j.
+In the loop head j is increased by 1, so one value was skipped.
+
+Markus Gräb <m_graeb11@cs.uni-kl.de>
+
+
+Commit: a55b9a7
+BUGFIX : Windows version HTML Web browser support
+
+Allow connection of a web browser to the Windows version via
+http://127.0.0.1:8080
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d200099
+BUGFIX : Possible linked list bug
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 30ae45e
+Windows Version of dump1090
+
+Make the modifications necessary to compile dump1090 for WinXP, Win7 and
+hopefully Win8.
+
+The files can be compiled using M$ Visual Studio/C++ 6.0. Due to various
+licensing issues, I haven't included the libraries or DLLs. You will
+need to locate pthreadVC2.lib and rtlsdr.lib to link the file, install
+the zadig drivers to support the dongle, and locate libusb-1.0.dll,
+msvcr100.dll, pthreadVC2.dll and rtlsdr.dll.
+
+dump1090.exe will not run on any Windows version prior to XP SP2,
+because msvcr100.dll imports several functions from the Windows kernel
+that are not available on earlier versions. This means dump1090 won't
+work on Win2K.
+
+The major change to the code relates to file handles. The original code
+assumes Linux behaviour in that handles are allocated from 0
+sequentially upwards. However Windows handles are allocated pseudo
+randomly, and handle numbers greater than 1024 would break the code. The
+code has therefore been modified to use a linked list of connection
+structures, rather than a static array limited to 1024 entries.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f7843c1
+Implement TCP Heartbeat
+
+Some users have reported issues where the TCP link to dump1090 can be
+lost at times of low traffic density - typically in the middle of the
+night. One possible reason for this is that some routers drop the link
+if there is no traffic for a predetermined period.
+
+To try and resolve this, dump1090 now sends a 'null' packet consisting
+of 7 "0x00" bytes approximately once a  minute if there is no real
+received traffic during this time. This packet should be discarded by
+the application receiving the dump1090 because it will have an invalid
+checksum, and ICAO address 0x000000 is also invalid. However, this null
+packet should be enough to keep routers alive.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 4a438d6
+Update the Windows version of View1090
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 97c7f69
+Publish V1.08.2302.14
+
+Final tidy up and publish
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 260b955
+BUGFIX : Beast Binary Escape characters
+
+Thanks to Blort on the PP list.
+
+The Beast binary message stream uses the 0x1a character a and escape to
+mark the beginning of a new message. However, the 0x1a character could
+occur in the body of a message since the message is binary. Therefore,
+the 0x1a is repeated  -as Blort put it :
+
+This 56-bit Mode S Frame (containing a 1a) is supposed to look like
+this:
+
+1a  32 00 00 48 7b a6 1a 1a 0c  20 28 17 b0 c0 c3 b0
+
+What is actually looks (looked) like (from wireshark) is this:
+
+1a  32 00 00 48 7b a6 1a 0c  20 28 17 b0 c0 c3 b0
+
+There are supposed to be two 1A’s (Gunter’s Escape Character) in a row
+(1A 1A) whenever a data byte contains 1A, after the initial two 1A 3x
+characters.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 75a4c6e
+BUGFIX : Missed data causes timestamp slip
+
+The Mutex on the RTL data reader thread does not "force" the data
+processing thread to execute. Therefore, if the processor is busy, it is
+possible for a second RTL callback to occur before the data from the
+first has been processed. This will cause the loss of the first data,
+but worse, it will cause a slip in the timestamp. This upsets Beamfinder
+and MLAT operation in PlanePlotter.
+
+To solve this, keep a Fifo buffer which is filled by the callback
+thread, and emptied by the data processing thread. The fifo is the same
+size as the number of buffers requested in the call to
+rtlsdr_read_async().
+
+Note - we only put the value of the pointer supplied in the callback
+into the fifo. We do not attempt to cache the data in the buffer pointed
+to by the pointer.  This would require us to memcopy() 2Mbytes per
+second, which we don't want to do if we don't have to because it will
+only make the processor loading worse. Instead, we assume that the data
+in the buffer will remain valid after the callback returns, at least
+until it is overwritten by new data.
+
+It is still possible for us to lose data if we can't process it quickly
+enough. However, we can now detect this loss of data when the fifo is
+almost full, and correct the timestamp for the lost block/blocks.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 24080a2
+antirez
+
+Free the client on best effort write(2) short write
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: b9a1a3e
+antirez
+
+modesFreeClient() optimized to find new maxfd faster
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f331887
+antirez
+
+Constant replaced with macro MODES_NET_SERVICES_NUM.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 86093ea
+WIZARDISHUNGRY
+
+Dynamically size terminal using SIGWINCH
+
+https://github.com/antirez/dump1090/commit/f18180fef4ea6e0195d55439d93c4d717c35da8f
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e9d2232
+Honor LDFLAGS
+
+Adam Cécile (Le_Vert) <gandalf@le-vert.net>
+
+
+Commit: b921d80
+Typo fixes
+
+Adam Cécile (Le_Vert) <gandalf@le-vert.net>
+
+
+Commit: fe9d168
+Bug fix in ppup1090
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f3b5167
+Create separate Makefiles
+
+Create separate makefiles for dump1090, view1090 and ppup1090. These can
+be run with the command line "make -f makedump1090", "make -f
+makeview1019" and "make -f makeppup1090"
+
+Pass dump1090 version number into ppup1090 uploader so that coaa1090.obj
+doesn't need re-compiling between versions.
+
+Remove ppup1090 from general Makefile - it's not intended for anything
+other than RPi, so gives linker errors on other (non Linux raspian)
+systems.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 11502e9
+Extra list decoding for DF-0 and DF-16
+
+Extra list decoding for DF-0 and DF-16
+Tidy up a few things
+Change version number
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 64b24eb
+Bugfix in position decoding
+
+If the aircraft lands or takes off, the Lat/Lon valid flags are cleared.
+In the original code, this also resulted in any even/odd position
+reports in the mm record being discarded  This meant that the code would
+require an even and odd position after the change of flight status.
+
+The code had been modified so that any position report in the mm record
+is used even if there is a change of flight status. This means there
+only needs to be an even or odd after a change of FS, rather than
+requiring both even and odd. The result should be earlier decoding of
+position.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: fa004fc
+DF-11 SI/II Detection changes
+
+Don't allow detection of DF-11 SI/II until we have received at least one
+DF-11 for the aircraft with an SI/II of zero.
+
+Previous versions would allow an ICAOAddr to be marked as valid if a
+DF-11 was received where the crc was less than 80. This is required for
+SI/II detection where the SI/II is overlaid on the crc field. However,
+this also decreaces the security of the crc. It is possible for a
+corrupt message to result in a crc value of between 1 and 79, and this
+will lead to an invalid ICAOAddr being marked as received.
+
+To try and prevent this, do not allow detection of DF-11 II/SI fields
+until at least one DF-11 crc=0 has been received. Once this happens, we
+ca be fairly sure that this aircraft really is within range, and so
+II/SI detection can e used.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f50744b
+Better Incorporate coaa.h
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f821613
+mode_ac.c comit
+
+Dunno why - haven't changed it - but github is forcing me to re-commit
+this.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 5b5424d
+View1090 WinXP bugfix
+
+Updated the way socket handles are used in View1090 to maintain
+compatibility between UNIX and Windows.
+
+Added the initial attempt at a Planeplotter uploader
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: a968f03
+Stop heading using multiple lines
+
+In the table view of aircraft, the heading was displayed as "330 (NW)"
+or similar. However, this cause the entry to scroll over into two lines
+of text, and reduces the number of planes that can be seen in the table
+at any one time.
+
+There probably should be a way to make the table view wider by scrolling
+it, but I can't see any way to do that. So for the moment I've commented
+out the extra (NW) bit.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 2e43a9e
+IE 8/9 Web Interface moving planes
+
+Many thanks to 0xFACE for this fix. Hopefully those using Windows and
+IE8/9 should now see some moving action.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 19ce5a2
+Additional debug message printing
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 2c28d9f
+IE 8/9 Bugs in Web interface
+
+*DISCLAIMER*
+I didn't write any of this code initially, I've never tried to use it,
+and I don't understand Java Script at all. In-fact I hate the wretched
+stuff.
+
+Anyway, it appears that no-one has bothered to test any of the Web
+interface code using Microsoft Internet Explorer 8 or 9. I've attempted
+to hack out the sections of the code that are causing problems, and at
+least the web interface now seems to run.
+
+However, for some reason the planes never move - I know this must be a
+bug, but I don't know how to fix it.
+
+Most of the errors relate to trailing commas.  My guess it that some
+Java engines don't mind trailing commas, but that the Microsoft ones do.
+There are also some undefined modules (untrackedDeveloperSettings) and
+functions (console.log) which I guess those who wrote the code have on
+their machines, but forgot to include in the public distribution. I've
+no idea how to fix this, so I've just hacked them out of the code.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 0430323
+Implement a remote interactive screen
+
+No changes to dump1090, (except the version number)
+
+Include a sample Linux batch start file called dump1090.sh for use when
+running dump1090 headless. This file needs to be copied to the
+/etc/init.d/ subdirectory on your raspberry pi, and marked as
+executable. Then when you re-start your RPi, dump1090 will start-up
+auto-magically and run as a sort of server to allow both local and
+remote connection to it's various internet ports.
+
+Modified the Makefile to build a new headless helper application called
+view1090
+
+Added view1090. This is an executable that allows you to connect to
+dump1090 when it is running and 'see' the interactive screen display.
+The default is to try and connect to dump1090 on IP address 127.0.0.1
+port 30005. This should work if you are running on the same RPi as
+dump1090 and using the default dump1090 port settings. However, if
+you're running on a different machine you will have to specify the IP
+address of the RPi running dump1090 using the --net-bo-ipaddr switch.
+Something like "view1090 --net-bo-ipaddr 192.168.2.65" . You may also
+have to sudo it, depending on your privilige settings.
+
+I've also compiled view1090 as a Wiin32 exe, so you should be able to
+run it under any 32 bit version of Microsoft Windows - i.e. Win95, Win
+2K, Win XP, Win 7 etc.  It may work on Win 8 and 64 bit Windows, but I
+haven't tried it. The Win32 version is compiled from the same source, so
+takes all the same command line switches.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 03c16aa
+Merge pull request #10 from termigrator/patch-1
+
+Update net_io.c
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: c2962a0
+Update net_io.c
+
+Added vertical rate (a->vert_rate) to json output
+termigrator <robert1@kaider.info>
+
+
+Commit: d9de119
+Version update
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 7ea2e8f
+Bug Fix in modesReadFromClient()
+
+The modesReadFromClient() funtion is called from modesReadFromClients(),
+which in turn is called from backgroundTasks(). backgroundTasks() is
+called from within the main processing loop.
+
+However, modesReadFromClient() can and does block. It attempts to read
+characters from the input stream, and loops whilst there was no error.
+This stalls the main RTL processing loop until an error occurs. In order
+to support simultaneous local reception (via our RTL dongle) and remote
+forwarding (data received from the interweb) we cannot allow this
+internet read to stall.
+
+To fix this, in modesReadFromClient() attempt to read a buffer of data
+(currently 0x400 bytes). If we get a full buffer of bytes, then process
+them, and attempt to read another full buffer. Keep doing thios untill
+we read only a partial buffer (less than 0x400 bytes). Process the
+partial buffer bytes and return.
+
+This allows us to occasionally process data that is arriving from the
+internet (which is buffered anyway in the TCP stack), without blocking
+local RTL dongle decoding.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 52ac50b
+Remove some local filtering
+
+Oops - Left some personal ModeA/C filtering in the release code that
+only applies if you happen to be within 25 miles of Yeovilton.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 6997715
+Split into separate module files
+
+Ok - this is likely to upset some people. Up until now, the vast
+majority of the code has been in just one file - dump1090.c. This file
+has grown so that it was approaching of 5000 lines long, and it was
+becoming unmanagable. So I've split the file into several modules,
+hopefully along fairly logical boundaries. The files are :
+
+1) dump1090.c : Basically just the main() entry function, the help
+function, the RTL dongle hardware interface, and a few orphan functions
+that  don't really fit anywhere else.
+
+2) mode_s.c : This contains all the mode S / ADSB decoding functions.
+
+3) mode_ac.c : This contains all the mode A & C decoding functions
+
+4) interactive.c : This contains all the functions to maintain an
+internal list of aircraft seen over the last period, and functions to
+print them out to the local console.
+
+5) net_io.c : This contains all the network input/output functions
+allowing data to be passed in/out to/from other receivers, in formats
+such as SBS-1/3, Beast, AVR and JavaScript.
+
+Hopefully this should provide an easier way forward if/when more
+functions are added.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 1ebdd6d
+Interactive list aircraft display and delete changes
+
+Create two different Time-To-Live parameters for the interactive display
+list.
+
+1) Modes.interactive_display_ttl defines for how long the display of an
+aircraft persists after the last received message. The default is
+MODES_INTERACTIVE_DISPLAY_TTL, which is set to 60 seconds. This replaces
+the previous Modes.interactive_ttl/MODES_INTERACTIVE_TTL settings (which
+were also 60 seconds)
+
+2) Add an additional Modes.interactive_delete_ttl  parameter, and
+default it to  MODES_INTERACTIVE_DELETE_TTL, shich is set to 300
+seconds/5 minutes. This defines for how long an aircraft persists in the
+list structure after the last received message before being deleted.
+
+Also tidy up a few comments.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: da8151d
+Merge pull request #8 from bdavenport/master
+
+I can't pretend that I understand what you guys are up to with all this Java stuff, but since the changes to the maon dump1090.c file are minimal I'll trust you :-) 
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 82b61f2
+Merge mapRefactor -> master
+
+terribl <terri@rannalla.net>
+
+
+Commit: b161004
+Merge mapRefactor -> master
+
+terribl <terri@rannalla.net>
+
+
+Commit: f53632b
+Merge branch 'mapRefactor' into masterMerge
+
+Conflicts:
+	.gitignore
+	public_html/gmap.html
+	public_html/script.js
+
+  All conflicts fixed but you are still merging.
+
+	modified:   .gitignore
+	modified:   dump1090.c
+	new file:   public_html/config.js
+	new file:   public_html/coolclock/coolclock.js
+	new file:   public_html/coolclock/excanvas.js
+	new file:   public_html/coolclock/moreskins.js
+	new file:   public_html/extension.js
+	modified:   public_html/gmap.html
+	new file:   public_html/options.js
+	new file:   public_html/planeObject.js
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 5f0e295
+From DE8MSH: Plane markers!
+Now markers look like planes! Thank You | Tak!
+
+(And bug pointed out by DE8MSH :))
+
+	modified:   public_html/planeObject.js
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: e91b0a6
+Added warning label when 7x00 squawk is shown.
+
+"Please don't call authorities"-warning label is show on map if any special squawk is show.
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 92d665e
+Hide Settings-windows text while page is loading.
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: 0e3426d
+"Reset Map" deselects plane correctly.
+
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: 10e3389
+Fixed resetMap() bug
+Fixed resetMap()-funtion to reset map-settings to default. Map saves last location and zoom values to localStorage.
+
+Also added new css-class '.pointer'.
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 072fba8
+Rolling back a couple changes and spawning a branch from here.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 21229d5
+The start of a crummy looking options.  It is bugged right now.
+Brought back the reset map.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 5c3f6da
+Merge branch 'mapRefactor' of https://github.com/bdavenport/dump1090 into mapRefactor
+
+Conflicts:
+	public_html/script.js
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 4752578
+Working on making an options window
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: fd0c116
+Tyop corrected
+
+terribl <terri@rannalla.net>
+
+
+Commit: 9904c22
+Added option to draw measurement circles around site
+Options:
+SiteCircles = true;
+SiteCirclesDistances = new Array(100,150,200);
+
+Circles are only shown if 'SiteShow' is true. SiteCirclesDistances is array of numbers. Distances are in NM or km depending 'Metric'-settings.
+
+	modified:   public_html/config.js
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: 3000baf
+Added metric-option to web-view
+Added option to show values in metric system.
+Metric = false; // true|false
+
+Removed unused conversion from aircraftsToJson() at dump1090.c-file.
+Tweaked distance calculation to use google map api.
+
+	modified:   dump1090.c
+	modified:   public_html/config.js
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: ca314fc
+Added distance to plane from site
+Just for fun. Distance is only shown if SiteShow is true in config.js-file.
+
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: 8b8f746
+Added site marker (and settings for that)
+Shows radars location on map. Default is not showing.
+
+Settings:
+SiteShow is boolean [true|false]
+SiteLat & SiteLon in decimal format.
+
+If using untrackedDeveloperSettings.js-file these settings can be
+copy-pasted on that file:
+
+SiteShow    = false;
+SiteLat     = 45.0;
+SiteLon     = 9.0;
+
+	modified:   public_html/config.js
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 6cb5c2b
+Merge remote-tracking branch 'upstream/master' into mapRefactor
+
+terribl <terri@rannalla.net>
+
+
+Commit: 11d69cb
+Tweaks and Fixes
+Tweaked selected planes display so it won't push plane-table around. Added
+link to FlightStats service and speed to selected plane table.
+
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 3eb21ea
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: 498b512
+Merge branch 'mapRefactor' of https://github.com/bdavenport/dump1090 into mapRefactor
+
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: e2b552e
+Merge branch 'mapRefactor' of https://github.com/bdavenport/dump1090 into mapRefactor
+Missing semicolon;
+
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: 5cd8a09
+Merge branch 'mapRefactor' of https://github.com/bdavenport/dump1090 into mapRefactor
+
+terribl <terri@rannalla.net>
+
+
+Commit: 40c666b
+Changed table and selected planes info display
+Changed table and selected planes info to show 'n/a' when data is not present.
+
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: b5d0038
+Fixes the selection bugs
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 29d413e
+Merge pull request #9 from MalcolmRobb/master
+
+Pulling in from MalcomRobb's master updates
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: e22cff4
+Small bugs and cleaned squawkdisplay
+
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 9c465c1
+Added untrackedDeveloperSettings to this branch too.
+
+Load devel settings file after config.js and settings are saved for
+developers even after merges.
+
+	modified:   .gitignore
+	modified:   public_html/config.js
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+
+Example file
+--- untrackedDeveloperSettings.js ---
+// Load this file after config.js so these settings are used
+
+var CONST_CENTERLAT = 35.21928;
+var CONST_CENTERLON = -80.94406;
+var CONST_ZOOMLVL   = 9;
+--- untrackedDeveloperSettings.js END ---
+
+terribl <terri@rannalla.net>
+
+
+Commit: 242738b
+Removed 0000 squawks from table
+
+terribl <terri@rannalla.net>
+
+
+Commit: 228b770
+Move declarations into a headed file
+
+This is the start of breaking the main dump109.c file into smaller
+modules to make it a bit more maintainable.
+
+Move all the #define and structure declarations into dump1090.h
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e86eb39
+VK1ET : Numerous changes to Port handling
+
+Changes based on ideas from John VK1ET. His commit notes are as follows
+:
+
+1. Change input socket handling to avoid unnecessary memmove (use
+pointers instead)
+
+2. Add ability to read and decode binary beast format TCP.
+
+3. Change output socket handling same as sbs_output - only call output
+handler if there is a current client connected use separate ports for
+beast in and out - no need for --net-beast flag. Will input/output
+format defined by socket connected to. avr raw, beast binary and sbs can
+be handled simultaneously.
+
+4. Some comments changes, filtering of ModeAC to json,.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f64a65b
+Tidy up of UKUEHN's improvements
+
+Resolves some merge conflicts that I couldn't find a way to fix during
+the previous merge.
+
+Remove a few Tabs that escaped in the edit/merge
+
+Rename the fix_errors flag variable to nFix_crc since it now represents
+the number of crc errors to attempt to fix.
+
+Remove the aggressive variable since it's now part of nFix_crc
+
+Only print phase correction statistics when phase correction is enabled.
+
+Add an additional Modes.stat_ph_bit_fix[] to count the bits fixed during
+phase correction
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 9edba93
+UKUEHN : Various Improvements
+
+Sorry Ulrich - I can't get Github to resolve the merge errors and
+preserve your commit notes, so I'll add them here.
+Improvements on bit error correction, doc update, preparation for
+program installation/package build
+
+Hi,
+I committed some further improvements on the bit error correction code,
+updated the readme, and implemented a way to install the program in the
+linux file system hierarchy (allows for package building).
+
+Regards,
+Ulrich
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: ee742cf
+SBS Output Format changes
+
+Bug fixes in the SBS output code as a result of an EMAIL from Liviu
+
+Some software gets upset if null fields are output where the software is
+expecting a valid value. This was being caused by DF0's outputting and
+SBS MSG5. MSG5 needs Atert and SPI flags, which are derived from the FS
+field. DF0 doesn't have an FS field, so cannot output a MSG5. Change so
+that DF0 results in an SBS MSG7.
+
+Also DF17/DF18 metypes 5 to 18 contain raw Lat/Lon data. However they
+cannot be decoded into real Lat/Lon values unless both even and odd
+parts are available Therefore, when we receive a DF17/DF18 we need to
+check that we have successfully decoded the Lat/Lon before we attempt to
+send an SBS MSG2 or MSG3. If we don't have a decoded Lat/Lon, send a
+MSG7 instead.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 4c0ed6d
+Set AOG_VALID for DF-17/18 metype 19
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 77bd1f4
+Include Vertical rate in aircraft structure
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8b5c74d
+Split into multiple JS files,
+Selecting planes now works,
+Started work on settings window,
+Created extension.js, an area for new ideas to be tested or loaded out of.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: b0e0f96
+Merge pull request #8 from MalcolmRobb/master
+
+Pulling in from MalcomRobb's Master
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: e0c752b
+Merge branch 'master' of https://github.com/terribl/dump1090
+
+terribl <terri@rannalla.net>
+
+
+Commit: 1436062
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: e309025
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: 6bf2f2b
+Added global settings and untrackedDeveloperSettings.js-file.
+
+untrackedDeveloperSettings.js
+Create file and add line `var developerSettings = true;` on top of it.
+After that some settings can be overwritten with deleloper's flavour.
+
+-- Example File w/o line numbers --
+var developerSettings = true;
+
+var CONST_CENTERLAT = 60.0; // 45.0
+var CONST_CENTERLON = 20.0; // 9.0
+var CONST_ZOOMLVL   = 6; //5
+-- End of Example File --
+
+	modified:   .gitignore
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: d2a1565
+Couple more small tweaks to the tails of planes.
+Added "CoolClock" both local and GMT to the info pane, http://randomibis.com/coolclock/
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: e50c2a5
+Phase Enhancement changes
+
+Phase enhancement is used to try and increase the signal amplitude when
+Nyquist sample aliasing is suspected. In previous versions, this was
+enabled by default. In this version, the default is off. There is now an
+additional command line switch --phase-enhance to turn it on.
+
+There are also additional debug statistics which count the number of
+phase demodulation failures in for both uncorrected and phase corrected
+passes.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: b481c76
+mm structure initialisation
+
+Ideally we should clear down the mm structure every loop of our
+ModeA/C/S bit detector. However, we're getting 2Mbits of data per
+second, and the structure is several tens of bytes long. Clearing down
+every loop would require us to zero up to 100Mb per second. The memset
+function may be fast, but it's still going to take up valuable processor
+time.
+
+So instead of clearing the whole structure every loop, just clear the
+important parts.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 2c7c1a4
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: b542488
+Updated a copy/paste error, where I did not update the paste.
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: caf413c
+Working on adding paths to the planes.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 3117b1c
+Merge pull request #6 from terribl/master
+
+resetMap()
+
+Did I manage to do this right? Let's try.
+Terhi <terri@rannalla.net>
+
+
+Commit: f853550
+Fixing resetMap()-bug.
+
+terribl <terri@rannalla.net>
+
+
+Commit: 4a3113f
+Decode DF-18
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 08ffc3f
+Change mm.crc checks to mm.correctedbits
+
+Instead of force clearing mm.crc to zero if we successfully correct bit
+errors, just use the mm.correctedbits variable. This allows us to print
+out the crc value containing the errors during list output modes.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: c43c922
+Making the inital checkin to the refactored map page.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 05c9ebb
+Merge pull request #3 from terribl/master
+
+New settings div
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: a1d4a9f
+Merge branch 'settings'
+
+terribl <terri@rannalla.net>
+
+
+Commit: be6cb6e
+VK1ET : Use error corrected DF17
+
+Actually use the (DF17) messages where we do bit correction.
+
+Other changes to AVR message I/O.
+1) treat mlat timestamp of zero as invalid (easier to work with than
+(-1) and equally unlikely).
+2) If we don't have a valid timestamp send a without timestamp
+'*.......' message rather than '@.......' with invalid time.
+3) Drop interpretation of obsolete AVR ' #' & '$' formats - they
+wouldn't have worked anyway (wrong length).
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e33591d
+VK1ET : Check Bit Correction against ICAO cache
+
+If we error correct a DF17 frame, check that the ICAOaddr exists in our
+recently seen ICAO cache. This reduces the likelyhood of birthday
+paradox solutions producing false ICAO addresses
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 542b94d
+VK1ET : Changes to fixBitErrors()
+
+1) Reduce complexity of fixBitErrors()
+2) Inline flipBits()
+3) Remove validation checks that can never occur.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d7df2ad
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: 0a0ba16
+VK1ET : Changes to modesInitError()
+
+Restrict Syndromes to exclude DF bits. Do NOT introduce syndromes for
+errors in the first 5 bits (DF field)
+
+Use the --aggressive flag to see if we populate the two-bit error
+syndromes. If --aggressive is not specified, then we don't attempt to
+fix two bit errors.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 0dfc083
+New settings area
+New settings area can be opened by clicking Settings-link and closed by same link or OK-button. No settings to change yet.
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 640d63a
+VK1ET: Shorten CRC calculation
+
+We don't need to include the CRC itself one bit at a time. This shortens
+the loop count by 24 iterations, so should be much faster
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f33a709
+VK1ET : Better pthread termination
+
+Close threads, mutex and conditions using pthread functions
+
+Also, correct/update a few comments.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 92fd06b
+VK1ET : Bugfix in Error correction table
+
+vk1etI believe there is an error in the way the CRC error syndromes are
+being created in the two bit case. The inner loop was introducing an
+extra error bit each time through rather than moving it. Below is the
+modified code fragment for syndrome creation collapsedSun 07:26
+19 May 2013 07:26vk1et [notifications@github.com]Actions
+To:Mantirez/dump1090 ‎[dump1090@noreply.github.com]‎Cc:MMalcolmRobb
+‎[Support@ATTAvionics.com]‎
+
+To help protect your privacy, some content in this message has been
+blocked. If you're sure this message is from a trusted sender and you
+want to re-enable the blocked features, click here.
+Bugfix first noted by VK1ET, and posted here :
+https://github.com/antirez/dump1090/pull/23#issuecomment-18113094
+
+I believe there is an error in the way the CRC error syndromes are being
+created in the two bit case. The inner loop was introducing an extra
+error bit each time through rather than moving it.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: bd39479
+Merge pull request #6 from bdavenport/tablesort
+
+Table sort & bit cleaner look with larger tables on smaller screens
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 0ee5cdb
+Fixed a bug on Settings-link placement
+
+terribl <terri@rannalla.net>
+
+
+Commit: 2d1325f
+Changing info_footer to info_settings.
+
+Location from footer to top right hand corner.
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 8e23983
+Merge pull request #1 from terribl/master
+
+Added link to FlightStats-service
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 9e8c105
+Added link to FlightStats for flights with flight number.
+
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: e1a0665
+Added terribl's suggestion.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: 4dc9271
+Adds a bit of sorting to the table by clicking column headers
+Also made the design work for lower resolution monitors, especially when the list has 20+ planes.
+
+Brian Davenport <the.lost.minded@gmail.com>
+
+
+Commit: eac2a90
+Version update
+
+Version update for terribl and bdavenport's combined changes
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 7cff495
+Merge pull request #3 from terribl/master
+
+Web client
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 7b99ad5
+Few bugs
+
+terribl <terri@rannalla.net>
+
+
+Commit: 72142fa
+Combined effort and code from bdavenport and me.
+
+Added quite a lot of new things this time - see modified files or just
+be brave and try :)
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 9ea6f3e
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: df4a24b
+Version update for Ulrich
+
+Updated the version number for Ulrich's code
+
+Replaced some Tabs with spaces
+
+Forward declaration of the fixBitErrors() function required for M$ VC
+6.0 to suppress warning messages.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e0bc0ba
+Merge pull request #4 from ukuehn/master
+
+Bit error correction code improved
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: feab602
+Call new error correction code. Instead of bit positions record no. of corrected bits.
+
+Ulrich Kuehn <ukuehn@acm.org>
+
+
+Commit: 6d5d7a4
+Test code for new bit error correction plus timing. This code is run when debugging.
+
+Ulrich Kuehn <ukuehn@acm.org>
+
+
+Commit: 0a4fc6e
+Added code for table based correction of bit errors. Code is not called yet except initialisation.
+
+Ulrich Kuehn <ukuehn@acm.org>
+
+
+Commit: ae69cd5
+Web view JavaScript modifications.
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: 6f228b9
+Upstream merge finalized
+
+terribl <terri@rannalla.net>
+
+
+Commit: cac715e
+Upstream merge conflicts resolved
+
+terribl <terri@rannalla.net>
+
+
+Commit: 78f565c
+Really minor tweaks
+
+terribl <terri@rannalla.net>
+
+
+Commit: f56679a
+VK1ET : Bugfix pTimestamp printf()
+
+Change the type of pTimestamp from char* to unsigned char* to stop sign
+extension messing up the printf("%02X,pTimestamp stuff
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8feabda
+BDAVENPORT : Adds a Table
+
+Implement improvements to the public_html stuff as supplied by
+bdavenport.
+No changes to the C code.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e65e873
+Added flags to json for valid position and heading
+As MalcolmRobb suggested.
+
+	modified:   dump1090.c
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: ebadf90
+Merge remote-tracking branch 'upstream/master'
+
+terribl <terri@rannalla.net>
+
+
+Commit: c83d404
+Update of some comments, Version and release
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e6080e2
+Some map view changes
+
+	modified:   public_html/gmap.html
+	modified:   public_html/script.js
+	modified:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: d046906
+Update ModeA/C to ModeS
+
+Update the ModeA/C to Mode S comparison routine to use bFlags.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: bf4ccac
+bdavenports .diff-file
+
+terribl <terri@rannalla.net>
+
+
+Commit: 6427fcc
+VK1ET :  --Interactive display changes
+
+Based on a submission by VK1ET, but I've tweaked it a bit to use the
+bFlags.
+
+Basically, only print out values in --interactive that have been
+received from the aircraft. Previous versions would display 0.000 for
+lat and long for any positionless aircraft. This version prints blanks
+instead for any/all fields that are not yet known.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: cd86d58
+Major Rewrite of SBS output code
+
+Remove dependency of the SBS output code on the historic (a) aircraft
+structure. The only items that were required were the decoded aircraft
+Lat/Lon and these are now included in the mm structure.
+
+Rewrite the SBS output code to use mm->bFlags when populating the output
+fields. This ensures that all available data is output, and also that no
+stale data is sent.
+
+Using the mm->bFlags variable for SBS output means there is no further
+requirement for the sbsFlags member in the aircraft structure, so remove
+it.
+
+Cross your fingers and hope this hasn't introduced too many bugs !
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 7df6d65
+Implement additional Decoding and Tidy
+
+Implement additional bFlags to validate AircraftOnGround, and FS.
+
+Decode Aircraft On Ground from DF0, DF4, DF5, DF16, DF20, and DF21 where
+possible.
+Flag FS as valid for DF4, DF5, DF20, DF21,
+
+Remove dr and um from the mm structure. They're only used in console
+list output mode, so decode them there if required.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 60aa63b
+Merge remote-tracking branch 'origin/master' into Debug
+
+Conflicts:
+	dump1090.c
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f59e82a
+fix .gitignore file
+
+terribl <terri@rannalla.net>
+
+
+Commit: 914923f
+Fix terribl's commit for Microsoft C
+
+Microsoft Visual C 6.0 doesn't support inline declaration of variables.
+
+Also, need to update the version number.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: c5fdde6
+Added resetMap()-function to web-view.
+
++ some small tweaks.
+
+	modified:   dump1090.c
+	modified:   public_html/script.js
+
+terribl <terri@rannalla.net>
+
+
+Commit: 735429b
+Additional bFlags for Lat/Lon decoding
+
+Additional flags in the bFlags variables for even and odd CPR lat/lon
+updates.
+
+Change the interactiveReceiveData function to use the bFlags when
+updating the aircraft (a) structure from the newly received (mm) message
+structure. This should hopefully be faster than basically re-decoding
+the DF, type and subtypes all over again.
+
+If we decode the lat/lon into the aircraft (a) structure, back populate
+it into the message (mm) structure. This allows us to print a decoded
+Lat/Lon in the decoded message list output.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f011f07
+Tidy up ModeA/C mm and a structure
+
+If --modeac is specified, then the program will be building an aircraft
+list. Calculate the altitude when we create the aircraft structure (a) ,
+and then back copy it into the mm structure. This avoids us having to do
+a second ModeAtoModeC conversion in the list output display.
+
+Also - bug fix in the ns_vel calculation.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 6968bf9
+Splitted gmap.html to multiple files in new 'public_html'-directory.
+
+Changes to 'dump1090.c'-file made accordingly.
+
+	modified:   .gitignore
+	modified:   dump1090.c
+	deleted:    gmap.html
+	new file:   public_html/gmap.html
+	new file:   public_html/script.js
+	new file:   public_html/style.css
+
+terribl <terri@rannalla.net>
+
+
+Commit: fc7d1e2
+Complete the bFlags decoding
+
+Update the bFlags structure member to indicate which other structure
+members contain decoded values.
+
+Also, trim out mm structure members that are simple bitwise ands from
+the raw data, unless the results are used in lots of places whereby
+decoding them once is more efficient.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: a3d62f9
+VK1ET : More Decoding of DF-17 ground reports
+
+Extend the DF-17 CPR decoding to use User Lat/Lon for ground positions.
+
+Also start implementing a bFlags structure variable to indicate which
+fields in the mm and a data structures contain valid values.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: cc464b0
+User Lat/Lon setting
+
+Based on initial code supplied by VK1ET
+
+Allow the user to specify their receivers (technically their aerials)
+physical location. This is required for decoding ground positions, and
+also for uploading aircraft data to various sharer sites.
+
+The position can be hardwired by setting the MODES_USER_LATITUDE_DFLT
+and MODES_USER_LONGITUDE_DFLT constants before compilation, or entered
+at runtime via the new command line switches --lat and --lon.   Either
+way, the values are checked for validity before use.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 5f009a3
+VK1ET ; Decode DF-17 ground position reports
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 6b53c9e
+Move the clearing of mm for modeA/C
+
+Only clear mm after we are sure we have got a Mode A/C. This reduces
+processor load.
+
+Also tidy up some Linux compiler warnings that result from the last
+change.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8048cbe
+Better decoding of DF-17 Airborne Velocity
+
+Based on a submission by VK1ET. Fully decode DF-17, metype 19. Take care
+to only update fields that are valid in the data.
+
+Also, initialise (to zero) the mm structures before use
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 6af4bb7
+VK1ET : Only Decode valid AC12 and AC13 altitudes
+
+Decode DF17 altitudes only if valid (i.e. must be a non-zero field)
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8efe649
+Tidy up some comments and initialisation
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: dd72fc6
+VK1ET : Allow stats in --interactive mode
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: fb5ef77
+VK1ET : Fix AC12 Altitude decoding
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 71ace95
+Additional Timestamps for Lat Lon
+
+1) Implement additional timestamps to remember when a new Lat/Lon value
+is generated.
+
+2) Increase callsign[] character array to 16 chars  to make it long word
+aligned.
+
+3) Change some more comments from /* to //
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: ed076d0
+Change initialisation of structures
+
+Use memset to clear entire structures at initial creation to zero, and
+then populate values that should not be zero. Do this rather than
+individually clear each structure member to zero.
+
+This should be faster, plus it's safer when new structure members are
+added because you don't have to remember to initialise them.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8870de2
+Update --interactive with DF20/21 callsigns
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 5457c5b
+Tidy DF17 print output routine
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 36778f1
+Extract callsign from DF20 and DF21
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 14c5459
+Improve callsign extraction from DF17
+
+Use 32 bit registers to hold multiple characters and shift them. This
+removes the need for multiple memory reads.
+
+Also tidy up the DF-17 extraction routine to make it more readable.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 539faaa
+Rename Gillham conversion function
+
+ICAO documents refer to AC13 for altitude encoding and ID13 for squawk
+wncoding. Rename decodeGillhamField to decodeID13Field to better
+represent this.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 9783b47
+Generate an average Signal Strength
+
+Remember the last 8 signal strengths for each aircraft and average them
+for --interactive display. This produces a less jittery indication.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: a296f27
+Make stats gathering conditional on Modes.stats
+
+There is a quite complex if/else construct for gathering statistics
+inside the main decodeModeS loop. To speed the loop up when not
+gathering statistics, make the whole construct conditional on Modes.stat
+being set.
+
+Also tidy up a few comments
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 2e21367
+Calculate DF and size in decodeModeMessage
+
+Allow the decodeModeMessage function to re-calculate msgtype and
+msgbits. This makes the code a bit more portable by not requiring the
+calling function to fill in these fields before the call.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: c81498a
+Improve DF field error correction speed
+
+Use bitmasks to speed up the detection of valid and invalid ICAO DF
+field types.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8d65abd
+Sanity Check on msglen after decoding
+
+Add a sanity check to ensure that msglen is consistent with the DF type.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 5f7ed42
+VK1ET : Ctrl/C and other cleanup code
+
+Changes supplied by John VK1ET.
+
+This tidies up the thread termination, which then allows for use of [a
+trapped] Ctrl/C to cleanly terminate the program and dump stats if flag
+set.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 50cedd7
+Major re-write of decodeModesMessage
+
+Lots of changes to the decodeModesMessages() function, and associated
+helper functions, with the aim of speeding the code up by reducing the
+number of calls to the CRC functions. Also, only update the mm variables
+which are part of the message we're decoding.
+
+Change the way CRC's are generated and checked.
+Change the way single and double bit error is implemented.
+General tidy up of the function to make it more readable.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e9b463d
+Update displayModesMessage()
+
+Update displayModesMessage() to show additional ICAO defined DF types.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 19c1150
+Mode S Gillham altitude changes
+
+Modify all the Mode=S Gillham altitude decoding to use a new function
+decodeGillhamField()
+
+Change the Mode-S signal strength so that it rounds to the nearest
+integer
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e161b76
+DF Error detection and Correction
+
+Added additional error detection and correction to the DF field of the
+first byte in every ModeS frame.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 7cf7958
+Change the message length decision
+
+Assume that DF0-DF15 are all short 56 bit messages
+Assume that DF16-DF31 are all long 112 bit messages
+
+This helps us error detect and error recover for bits in the first byte
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 748f2f5
+Adjust --interactive display
+
+Allow 8 character Longitudes to cope with -179.999
+
+Change the type of signalLevel to unsigned chae. Negative signal levels
+make no sense.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8ed0574
+Implement 100 ft Altitudes
+
+The DF's for altitude include a Q bit to distinguish either 100ft or
+25ft altitude encoding. This version implements the 100ft increments
+used by older aircraft. These codes are basically ModeC altitudes
+transmitted over ModeS.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 05187f7
+Add items to --interactive display
+
+Reformat the --interactive display to show more information
+
+Add a "Mode" column. This displays the The primary message type "S" or
+"A" plus any matching modes "a" and/or "c". Requires --modeac switch.
+
+Add a "Sig" column to show the signal strength.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 4d370bd
+Change default for error correction to OFF
+
+Add a --fix command line switch to enable error correction using CRC.
+Change the default to OFF/Disabled.
+
+Error correction can very occasionally result in an incorrect solution
+to the crc equation.  It also takes significant CPU work for very few
+corrected results. Therefore, the default has been changed to OFF, but
+you can re-enable it if you wish by using the --fix command line switch.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f77a85e
+VK1ET : Additions to check fflags
+
+Implement changes suggested by John/VK1ET
+
+Changes to cprNFunction to ensure fflag {was 'isodd'} is used as a flag.
+Fix to decodeCPRrelative to pass 'surface' flag.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 2acb094
+Changes to Mode A/C/S matchup code
+
+Try to improve the matching of ModeA/C codes to Known Mode-S
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 25f92e5
+Change Squawk/ModeA code
+
+The original code stores the squawk as a decimal (base 10) value. Change
+this to a hex value to reduce the amount of maths required to convert
+the input binary value..
+
+Rename all the variables used to store the squawk to "modeA", rather
+than variously identity, squawk and modeA.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f9c1dc1
+Remove duplicate varbles
+
+Several variables within structures contain the same information in
+different forms.
+
+The aircraft structure contains addr and hexaddr. Hexaddr is a printable
+string version of addr. However, hexaddr is only ever used in printf
+statments, so we can use printf(%06x) to print addr. This saves a printf
+for every received command.
+
+The modesMessage structure contains addr, and aa1,aa2,aa3 as separate
+bytes. aa1,aa2 and aa3 are only ever used to construct addr, and to
+print out. Therefore, we can use addr instead of them..
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 3766492
+Change Mode-A/C to Mode-S detection
+
+The original code made an attempt to reconcile a newly arrived ModeA/C
+message with every known Mode-S report at the time of detection.
+However, the results of matching up Modes A/C and S are only used in the
+interactive display routine, and that is only called periodically from
+within the BackgroundTasks loop.
+
+Doing the matching on every ModeA/C arrival incurs quite a large CPU
+processing load. Moving the matching up routine to the backgroundTasks
+loop means that the task is performed muck less frequently and therefore
+uses less CPU time.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 3dbc0ef
+VK1ET : Decode mode ASCII hex input message types
+
+Modifications entirely base on code supplied by John VK1ET.
+
+Supports additional AVR raw ASCII input message stream types
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: a04e399
+VK1ET : Implement Relative CPR decoding
+
+Modifications entirely base on code supplied by John VK1ET.
+
+Implements relative CPR Lat/Long decoding for --interactive display
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: b78b606
+Improvements to Mode A/C display
+
+Allow a greater range and negative values for Mode C (down to -1200
+feet)
+
+Stop attempting to feed ModeA/C data to SBS Output stream.
+
+Allow Mode A only matches to Mode-S squawks when the Mode A code does
+not conflict with any possible (legal) Mode C code.
+
+Allow Mode C matches to track aircraft climbing and descending
+relatively slowly. This also helps when trying to match Mode-S altitudes
+which are 25 foot increments, with Mode C altitudes which are in 100
+foot increments.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d63ac81
+Updated comments, ,no code changes
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 9fff65b
+Implement Mode A/C decoding
+
+First attempt at decoding legacy SSR Modes A and C.
+
+If the command line switch --modeac is used, the program will now
+attempt to recover Mode A/C signals contained in the raw I/Q data
+stream. The current recovery mechanism is quite strict and does not cope
+well with overlapping and corrupt SSR replies. I estimate that less than
+20% of possible returns are decoded correctly. Hopefully over the next
+few iterations this can be improved.
+
+If outputting raw data it is recommended to use the --net-ro-size and
+--net-ro-rate command line options to reduce the number of very small
+ethernet packets that will be generated by mode A/C replies.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 39cb96f
+Fix several bugs in input/output fromat
+
+Thanks to vk1et for these.
+
+1) Correct for additional timestamp langth in raw output buffer when
+using mlat mode
+
+2) Don't output a timestamp when the message has been received from a
+remote site (the internet). This is to avoid upsetting MLAT because
+there is an indeterminate delay between reception at the remote site and
+subsequent message arrival in the local dump1090 instance.
+
+3) Allow @ character for raw data input with timestamp, and correctly
+calculate the length.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 1126508
+Fix Bug in Beast Mode Output
+
+Original code put the signal strength in before the timestamp. It should
+be after.
+
+Also add some code to support MODE A/C output at a future date.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e987281
+Bug fix in vertical sign
+
+Incorrect shift amount when detecting vertical rate sign.  Thanks
+John-vk1et.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 3d25f4b
+Changes to prevent stale output in SBS-1 format
+
+The original code calculates Lat/Long only if it receives two DF-17
+(subtype 9 or 18) within one second of each other. I have no idea why.
+It then caches the results in the aircrafts data structure for use in
+the --interactive display.
+
+When SBS-1 style ASCII output is selected (port 30003) the code does not
+attempt to calculate Lat/Long from the data just received - instead it
+picks it up from the cached information in the aircraft's data
+structure.
+
+However, if the data isn't being updated this results in stale Lat/Long
+being sent out. This is most likely to occur when the aircraft is at the
+extreme edge of the receivers range when it may be getting some DF-17s
+containing Lat/Long, but not 2 per second. The program will continue
+sending the stale data until the aircraft finally times out (default 60
+seconds)
+
+I have modified the code to include a sbsflags variable in the aircraft
+data structure. When a new Lat/Long is decoded and put into the
+structure, a bit is set to indicate SBS_LAT_LONG_FRESH. Then, once the
+Lat/Long is output the first time, the bit is cleared. Thereafter the
+code will not populate the Lat/Long fields in the output message until
+SBS_LAT_LONG_FRESH is set again.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: bbcf68c
+Nunojpg Southern Hemisphere bug fix + 1
+
+1) Incorporate nunojpg southern hemisphere bug fix
+2) Initialise Modes.stat_DF_Corrected variable
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: a75442d
+Up issue the version and commit
+
+Version 1.01.1503.13
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 2431dc0
+Added --net-ro-rate command line switch
+
+The default is 0. This works in conjunction with --net-ro-size.
+
+The program will attempt to gather up "net-ro-size" raw bytes before
+sending them out over Ethernet. However, to avoid a long wait if the
+traffic density is very low, the program will only wait for
+"net-ro-rate" 64mS periods since the last send. before sending any data
+added to the output buffer since the last send. This allows the user to
+tailor the network load to suit their requirements.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 7779ef4
+Correct CRLF order in SBS-1 ASCII output
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: b15ae2a
+Print DF-11 II/SI
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 96afd52
+Speed up Squawk Decode
+
+Re-write to avoid multiple reads of the same memory variable.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 6619d21
+Speed up Error Correction
+
+Move memcopy to outside the main bit loop, and just flip the modified
+bit back at the end of each loop if it didn;t work
+
+Pass in a pointer to the mm structure being corrected, and fix-up the
+crc with the value inside the function, rather than re-calculate on
+return
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: bdf985a
+Don't attempt to error correct DF-11
+
+Don't attempt to error correct DF-11, because we can't be sure that the
+checksum/crc is supposed to be 0.
+
+Also a few typo's corrected
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: bb20d0b
+SBS-1 ASCII output changes suggested by JungleJet
+
+1) Populate Field 3 witn "111"
+2) Populate field 4 with "11111"
+3  Populate Field 6 with "111111"
+4) End the record with <CRLF>, rather than just <LF>
+5) Increase the ctrCommon buffer size to cope with additional field data
+
+Apparently, this makes the output more compatible with Plane Plotter and
+RTL1090.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 249c11a
+Add --net-ro-size command line switch
+
+Allow the user to specify the minimum size of raw data to be sent to the
+TCP port. Dump1090 will buffer up raw data until it has at least this
+many bytes to send to the TCP socket.
+
+The default is 0, which means every frame is sent to the TCP socket as
+it is decoded. The maximum value is limited to 1300 bytes.
+
+Note the buffer will  be flushed every 65 ms regardless of the amount of
+data in it so that excessive in transmission do not occur.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 0263793
+Add version number to help output screen
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 444b1cf
+Changed the date separator in SBS-1
+
+Changed the separator from \ to /
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 09d72d2
+Merge JungleJet Updates
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d96f3a6
+Added Raw Output Buffering
+
+The original code wrote every individual received frame to the TCP port.
+Some O/S's buffer smaller writes into larger packets. It appears that
+some versions of Linux don't. The result is that the (Ethernet) network
+gets bombarded with lots of small Ethernet packets.
+
+Therefore, I've added a 1500 byte output buffer to the raw output
+functions. Data is written into this buffer by the raw output routines.
+
+Data is flushed out to the TCP port when either.
+1) The latest write to the output buffer takes the contents to more than
+1300 bytes
+2) At the end of every processed block of data supplied by rtl-sdr. This
+will be every 56mS or so,
+
+The end result should be that on systems detecting a lot of traffic, you
+should see lots of > 1300-byte Ethernet packets. On systems receiving
+less traffic, you should see one network packet every 56 mS or so.
+
+The total number of network packets should be much reduced, and their
+average size much bigger. The worst case delay in transmission will be
+56 mS.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 1324e28
+Add Timestamps to SBS-1 format output
+
+As requested by mlino
+
+Note : I haven't been able to validate that the format is correct. I
+think it should be Ok, but it needs someone with an SBS setup to check
+it. Any offers?
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 1175a03
+Another attempt to remove UNIX compiler warnings
+
+M$ VC 6.0 does not like long long
+UNIX compilers don't like printing int64_t or uint64_t as %lld
+Raspberry Pi Linux doesn;t like PRId64
+
+So I give up.
+
+I've changed the affected variables to bog standard unsigned ints.
+Assuming these compile as 32 bit unsigned's, its unlikely youll have the
+program running long enough for these to overflow.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8c024d1
+Try to correct single bit errors in the DF field
+
+If noist/sampling/Nyquist errors cause bit detection errors in the DF
+pare of the frame, then we may not be able to work out the correct
+length of the message. We have to guess whether the bit should be a 0 or
+a 1.
+
+In such circumstances we assume the message length is long(112 bits)
+However, if we start to get encoding errors after bit 56 the we attempt
+to change our original guess at the bit, and invert it. If this change
+of guess would have resulted in a short message, and if the short
+message would have been error free then we can recover.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 0c91c5f
+Merge pull request #1 from junglejet/Debug
+
+Debug
+junglejet <gk@jetvision.de>
+
+
+Commit: 44ca030
+committ repeated
+
+committ repeated
+
+junglejet <lacaleta020@gmail.com>
+
+
+Commit: c495670
+--mlat option and --interactive-rtl1090 option added
+
+--mlat option introduced: to display raw data in Beast ascii format with
+counter (@...;), does not affect Beast binary format ;
+--interactive-rtl1090 option introduced: order of flight table Iin
+interactive mode) and some formats adopted to RTL1090 format, so
+comparison is easier
+
+junglejet <lacaleta020@gmail.com>
+
+
+Commit: 6362235
+Change the message bit decoder
+
+Change (and hopefully improve) the Message bit decoder.
+
+When decoding bits, a "0" is encoded as (m[j]<m[j+1]), and a "1" is
+(m[j]>m[j+1]) . However, there is a problem if mpj[ == m[j+1] because we
+can't decide what it's supposed to be.
+
+Antirez's original code defaults to a '1', and then lets the bit error
+detection code sort it out. I *think* it's better to default to '0'
+because it's more likely that noise added to the signal will produce a
+spurious '1' rathar than anything subtracting from the signal to produce
+a spurious '0'
+
+Also, Antirez''s code only looks for errors in the first bit of the
+message. I don't know why  this is.
+
+There is a potential problem in deciding the message length if there are
+any errors in the first 5 bits decoded, because this defines the message
+type (the DF-??), and it's the DF that determines how many bits the
+message shall contain.
+
+If there is an error in the first 5 bits, then we could ignore the DF,
+and continue decoding a long format (112 bits). However, for weak
+signals, if the message is a short one (56 bits) this results in the
+sigStrength decaying to the point where it's level drops below squelch,
+so we discard a possibly decodeable 56bit
+
+However, if we assume it's a short message, and only decode 56 bits, and
+it's really a long message we won't have decoded all the bits.
+
+Not sure what to do about this
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: ff697db
+Improve the decoding for DF-11
+
+Three changes in this one
+
+1) Change the checksum testing for DF-11
+2) Recode the Checksum generation routine to use pointers.
+3) Tidy up the appearance of some print debug statments
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: dc7e2b6
+Change the type of the stats variables from uint64_t to int64_t
+
+Some compilers complain about the printf %llx format being used with a
+uint64_t
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 22c3298
+Change the I/Q lookup table values for better detection
+
+Change the I/Q lookup table for better detection. Changes fully
+described in the source dump1090.c at line 347 onwards. This change
+results in about 30% more frames being detected at weak signal input
+levels.
+
+Also a bug fix from the last commit - C doesn't support the min()
+function.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f806f18
+Basic tidy up of the modesInit() function
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: f1935b2
+Get rid of that hideous goto
+
+I'm not overly keen on the continues either :-)
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: e59142b
+Merge the data bit detection and data byte assembly into the same loop
+
+Original code loops through the analogue array m[] detecting data bits
+and putting them into the bits[] array. It then loops through all the
+bits[] creating the msg[] byte array. It then loops through the analogue
+array m[] again calculating the signal strength.
+
+Change this so that everything is done in one loop so we can go straight
+from analogue samples to bytes, calculating the signal strength on the
+fly.
+
+Also use the results of the signal strength calculation to populate the
+message records mm.signalLevel variable.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d85939c
+Create a payload pointer in message detector loop
+
+Create a pointer, pPayload, which points to the start of the data bits
+in the analogue sample buffer m[]. So pPayload =
+&m[j+MODES_PREAMBLE_SAMPLES] Then use this
+pointer to perform the data bit detection tests.  It should save a few
+cpu cycles per test because accessing pPayload[2] should be quicker than
+m[2+j+MODES_PREAMBLE_SAMPLES].
+
+Also change the way phase correction works. the original code saves the
+original data (from m[pPayload] to aux[], and then phase corrects m[],
+and then restores aux[] back to m[] afterwards. Change this so that m[]
+is copied to aux[] and then phase correction is carried out in aux[],
+and the pPayload pointer points to aux[]. This then avoids the
+requirement to copy aux[] back to m[] afterwards, which saves a fair few
+CPU cycles.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 09af545
+Create a preamble pointer in the message detector loop
+
+Create a preamble pointer in the message detector loop
+
+Create a pointer, pPreamble, which points to the start of the preamble
+in the analogue sample buffer m[]. So pPreamble = &m[p] Then use this
+pointer to perform the preamble detection tests.  It should save a few
+cpu cycles per test because accessing pPointer[2] should be quicker than
+m[p+2].
+
+Also move the decision on whether to try OutOfPhase correction to the
+end of the first pass, rather than automatically going into phase
+correction if the first pass fails. This saves two memcpy's if the
+decision in the second pass is to not do phase correction.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 70031e1
+Create a preamble pointer in the message detector loop
+
+Create a pointer, pPreamble, which points to the start of the preamble
+in the analogue sample buffer m[]. So pPreamble = &m[p] Then use this
+pointer to perform the preamble detection tests.  It should save a few
+cpu cycles per test because accessing pPointer[2] should be quicker than
+m[p+2].
+
+Also move the decision on whether to try OutOfPhase correction to the
+end of the first pass, rather than automatically going into phase
+correction if the first pass fails. This saves two memcpy's if the
+decision in the second pass is to not do phase correction.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 316b456
+Make Things more Windows friendly
+
+Change the following so that M$ compilers and debuggers complain less
+
+1) change all long long data types to uint64_t.
+2) Typecast all malloc function returns to the correct pointer types.
+3) Explicitly typecast all float to int conversions.
+4) Remove inline variable declaration. Allowed in C++, but not in C.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: ff34693
+Make Things more Windows friendly
+
+Change the following so that M$ compilers and debuggers complain less
+
+1) change all long long data types to uint64_t.
+2) Typecast all malloc function returns to the correct pointer types.
+3) Explicitly typecast all float to int conversions.
+4) Remove inline variable declaration. Allowed in C++, but not in C.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d02a404
+Merge remote-tracking branch 'origin/master' into Debug
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 4f7b51a
+Change timer granularity & incorporate terribl's latest changes
+
+Apparently, the Beast output timestamp has a frequency of 12 Mhz.
+Therefore, I've updated the timestamp counter to simulate a 12 Mhz
+frequency.
+
+Also incorporate terribls latest updates
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 408c846
+Merge remote-tracking branch 'origin/master' into Debug
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: ed80552
+Speed up the I/Q to magnitude calculation
+
+Increase the speed of the I/Q to magnitude calculation lookup by
+expanding the table to 65536 entries (256*256*2 bytes). At runtime, this
+allows us to pick up raw I/Q bytes as a 16 bit value and index into the
+magnitude table to get a 16 bit result. This removes the need for
+subtracting 127, and then correcting for -ve numbers, so should be
+faster, at the expense of a larger data table.
+
+Change the maglut lookup table from 129*129 to 256*256
+Initialise the maglut buffer accordingly
+Change the data->maglut lookup to use the new maglut buffer
+Change the I/Q data buffer pointet to a uint16_t *
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: bbe96b6
+Merge remote-tracking branch 'origin/master' into Debug
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 3113223
+One bug fix, and some changes to the --interactive output format
+
+I messed up merging the Squawk display in interactive mode into my
+master.
+
+However, the original source posted by terribl causes a print line
+length greater than 80 characters. This in turn causes the lines to
+spill over on a terminal display. I have therefore re-formatted some of
+the output so that it fits within 80 characters.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 8ba18eb
+Type Conversion required when using --file
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 192cb80
+Speed up the I/Q to magnitude calculation
+
+Increase the speed of the I/Q to magnitude calculation lookup by
+expanding the table to 65536 entries (256*256*2 bytes). At runtime, this
+allows us to pick up raw I/Q bytes as a 16 bit value and index into the
+magnitude table to get a 16 bit result. This removes the need for
+subtracting 127, and then correcting for -ve numbers, so should be
+faster, at the expense of a larger data table.
+
+Change the maglut lookup table from 129*129 to 256*256
+Initialise the maglut buffer accordingly
+Change the data->maglut lookup to use the new maglut buffer
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 43c6484
+Added some other peoples commit modificatons
+
+Added dtiller's --quiet and --ppm modifications
+Added terribl's squawk on interactive modifications
+
+Removed up some unused or un-needed variables
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: d3662bb
+Implemented Beast Binary output
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: ff0fe38
+Two typos fixed in gmap.html.
+
+antirez <antirez@gmail.com>
+
+
+Commit: c991d65
+gmap.html: update plane flight field when new data is received.
+
+antirez <antirez@gmail.com>
+
+
+Commit: acc702d
+Fake version info removed from gmap.html.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 9d55d5e
+gmap.html: no rotation jumps when selecting / deselecting planes.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 3307261
+CPR decoding: southern hemisphere coords are now handled correctly.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 13596ba
+A few bugs fixed in debug.html.
+
+antirez <antirez@gmail.com>
+
+
+Commit: e9e07e0
+Improved Google map interace: select planes and see details.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 27e3743
+Remove stale aircrafts when --interactive is not enabled.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 977493c
+Strong preamble detection even with --aggressive.
+
+To try to decode messages with a fundamentally flawed preamble is mostly
+a useless waste of CPU time.
+
+The new aggressive mode still detects a sensible percentage of
+additional messages because of the error tolerance and two-bits fixes
+but does not waste your CPU time.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 184953f
+Phase correction fixed, code reshaped to apply more corrections.
+
+The phase correction was applied only to a subset of bits! Because of an
+offset error.
+
+The detection code layout was modified a bit to make it simpler to
+implement more corrections in the future. However only phase correction
+is performed currently. Slope correction, or to compensate for the cycloid
+effect are two possible improvements.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 11d8db0
+Properly initialize ICAO cached addresses hash table.
+
+antirez <antirez@gmail.com>
+
+
+Commit: c2e79d4
+Many small improvements (see full commit message).
+
+* Better preamble detection to skip most of the messages we'll likely
+  not be able to decode.
+
+* A Phase correction algorithm that improves the recognition compared
+  to the previous algorithm used.
+
+* Javascript output in debug mode, and a debug.html file that can be
+  used in order to see graphically undecoded samples.
+
+* Ability to detect cross-read messages, that are, messages that happen
+  to start and end across two different reads from the device or file.
+
+* A few bugx fixed.
+
+* README improved.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 9086290
+SBS-1: Code style adapted to code base.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 071a021
+New feature: Output in SBS format
+
+Kemal Hadimli <kemal@vnil.la>
+
+
+Commit: 2fe1882
+Do not modify the packet when AP gets decoded.
+
+antirez <antirez@gmail.com>
+
+
+Commit: c9bb486
+Squawk extraction fixed.
+
+antirez <antirez@gmail.com>
+
+
+Commit: b4805ea
+Two important fixes to CPR decoding: wrong cast and more precise timing.
+
+This commit address two issues with the implementation of CPR decoding:
+
+Fix #1: The two functions N() and DLon() used to have the latitude
+parameter as an integer (!), basically truncating the fractional part
+before calling the NL() function to perform the lookup.
+
+This resulted into random strange movements of aircrafts, especially
+jumps or shifted positions.
+
+Fix #2: Use milliseconds for CPR odd/even timestamps. Dump1090 already
+tried to use the most recent packet received among the odd and even
+packets currently available, however to do this correctly millisecond
+resolution should be used, otherwise many times the odd and even packet
+appear to have the same time in seconds and we don't always use the
+latest received.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 03759a3
+Google map view enhanced: color by altitude and more.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 21fc9de
+HTTP keep-alive fixed. Network debugging capabilities.
+
+antirez <antirez@gmail.com>
+
+
+Commit: e40e55b
+Less buggy network requests parser.
+
+antirez <antirez@gmail.com>
+
+
+Commit: dc91712
+Aggressive mode implemented.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 0bf65d8
+Better error handling for network clients.
+
+antirez <antirez@gmail.com>
+
+
+Commit: e1d3724
+Regression fixed: set client socket non-blocking.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 42eb990
+HTTP: Set clen correctly when serving gmap.html.
+
+antirez <antirez@gmail.com>
+
+
+Commit: a583615
+Initial HTTP support with planes animated using google map.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 4203b9c
+Minor README improvements.
+
+antirez <antirez@gmail.com>
+
+
+Commit: b10c8da
+CPR decoding fixed.
+
+antirez <antirez@gmail.com>
+
+
+Commit: f3a705f
+README -> README.md
+
+antirez <antirez@gmail.com>
+
+
+Commit: ddb1aa2
+README improved with more antennas info.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 0ce746d
+Ability to receive traffic from network.
+
+antirez <antirez@gmail.com>
+
+
+Commit: b5ff48e
+Network server sending raw data to clients.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 539039f
+Set heading to 0 when speed is 0.
+
+antirez <antirez@gmail.com>
+
+
+Commit: af4964d
+With --raw fflush() at every output to avoid delays.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 9c8ad1c
+More stuff on .gitignore.
+
+antirez <antirez@gmail.com>
+
+
+Commit: b6907f4
+CPR position decoding. Track calculation from velocity components.
+
+antirez <antirez@gmail.com>
+
+
+Commit: ec1f34f
+Fix for --metric
+
+antirez <antirez@gmail.com>
+
+
+Commit: 32fe8d8
+New --metric option to use meters and km/h in --interactive.
+
+antirez <antirez@gmail.com>
+
+
+Commit: f231c7a
+Remove idle aircrafts in interactive mode.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 3f47bb6
+Initialize aircraft speed in interactive mode.
+
+The effect of this bug was random speeds displayed with --interactive.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 1576b61
+Minor aesthetic change to interactive mode.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 840a005
+Interactive mode with --ifile: play at natural speed.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 69ae249
+New AP brute forcing algorithm.
+
+The old approach was to loop over a small circular buffer of recently
+seen addresses recomputing the CRC every time: this prevented the use of
+a big cache, and 20 entries was too small in case of high traffic and
+big range antennas.
+
+@prog on ##rtlsdr suggested to use an alternative algorithm where
+instead we compute the CRC of the message, and xor it to obtain the
+address, that is later checked in our list of recently seen addresses.
+This is a lot better and allows for bigger tables in O(1) lookup time.
+
+I used this idea to implement a larger 1024 elements table. Instead of
+writing a proper hash table I used the fact we are just dealing with a
+cache, so I just hash the ICAO addess and overwrite the old entry at
+that idex with the address-timestamp pair, not caring about collisions.
+
+The bigger table makes a huge difference:
+In a test vector of 113 seconds recording with 76 simultaneous aircrafts
+the new algorithm detected around 10k more messages (!).
+
+antirez <antirez@gmail.com>
+
+
+Commit: fed415b
+Show 16 bit magnitude value with --debug.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 0a7c5c2
+Threads locking model fixed (reliable --ifile).
+
+antirez <antirez@gmail.com>
+
+
+Commit: c653e0e
+Added a new --onlyaddr option to just output ICAO addresses.
+
+antirez <antirez@gmail.com>
+
+
+Commit: b3945d1
+Use 16 bit for the magnitude vector to improve sensitivity.
+
+As @keenerd noted on ##rtlsdr, using an 8 bit magnitude vector is not
+enough in order to distinguish every different I/Q pair.
+
+With this commit a few more messages with good CRC are detected.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 417cab5
+Improved message detection and --stats option.
+
+The demodulation algorithm now only skips the current message if the
+CRC is valid, this improves the amount of messages detected with good
+CRC by ~ 4% since sometimes we are just a few samples out of sync.
+
+This also improves the amount of messages that can be fixed.
+
+The --stats option was added in order to better evaluate how the
+algorithm performs on the same input after some change. So if you run
+the program with both --ifile and --stats no Mode S message is logged
+at all, but at the end of the processing the program shows you the
+amount of messages decoded with good, bad crc, bit corrections, valid
+preambles and so forth.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 3833673
+Git ignore the right executable name.
+
+antirez <antirez@gmail.com>
+
+
+Commit: f01324c
+Interactive mode: new switch --interactive-rows for max # of rows.
+
+antirez <antirez@gmail.com>
+
+
+Commit: d974a4d
+Everything renamed dump1090 (was mode1090).
+
+antirez <antirez@gmail.com>
+
+
+Commit: c059d01
+Makefile: use pkgconfig instead of hardcoded paths
+
+Steve Markgraf <steve@steve-m.de>
+
+
+Commit: f01670e
+Use 1.408 factor to create the magnitude look up talbe.
+
+Previously 1.4 was used that prevented to use the full 0-255 scale.
+Thanks to @keenerd for reporting this issue.
+
+antirez <antirez@gmail.com>
+
+
+Commit: d709a21
+TODO list updated.
+
+antirez <antirez@gmail.com>
+
+
+Commit: cae1d0c
+Fixed errors and typos in --help.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 1971ba9
+--raw output format is now compatible with adsbhub.
+
+antirez <antirez@gmail.com>
+
+
+Commit: 7ca5a4b
+Initial commit of Dump1090, a simple Mode S decoder.
+
+antirez <antirez@gmail.com>
+

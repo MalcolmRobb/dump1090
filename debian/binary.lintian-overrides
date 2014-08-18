@@ -1,0 +1,2 @@
+# The web UI uses Google Maps, which cannot be served locally.
+dump1090 binary: privacy-breach-generic usr/share/dump1090/public_html/gmap.html

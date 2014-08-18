@@ -1,6 +1,10 @@
+Author: Matthew John Ernisse <mernisse@ub3rgeek.net>
+Description: Update Makefile to work with the dh build system.
+Forwarded: not-needed
+
 --- a/Makefile
 +++ b/Makefile
-@@ -4,18 +4,35 @@
+@@ -4,18 +4,21 @@
  #
  PROGNAME=dump1090
  
@@ -8,6 +12,10 @@
 -BINDIR=$(PREFIX)/bin
 -SHAREDIR=$(PREFIX)/share/$(PROGNAME)
 -EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
+-endif
+-
+-CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
+-LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 +BINDIR=$(DESTDIR)/usr/bin
 +SBINDIR=$(DESTDIR)/usr/sbin
 +SHAREDIR=$(DESTDIR)/usr/share/$(PROGNAME)
@@ -19,52 +27,21 @@
 +CFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
 +LIBS=$(shell pkg-config --libs librtlsdr) -lpthread -lm
 +LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
-+CC=gcc
-+
-+ARCH=$(shell uname -m)
-+
-+# ppup1090 requires coaa1090.obj which is an ARM binary.
-+# So only build ppup1090 on an ARM platform.
-+ifneq (,$(findstring arm, $(ARCH)))
-+	ARCH=arm
-+else
-+	ARCH=other
- endif
+ CC=gcc
  
--CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
--LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
--CC=gcc
-+all: all-$(ARCH)
-+install: installbin-$(ARCH) installhtml
- 
- 
--all: dump1090 view1090
-+all-other: dump1090 view1090
-+all-arm: dump1090 ppup1090 view1090
+-
+ all: dump1090 view1090
++install: installbin installhtml
  
  %.o: %.c
  	$(CC) $(CFLAGS) $(EXTRACFLAGS) -c $<
-@@ -23,8 +40,25 @@
- dump1090: dump1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
- 	$(CC) -g -o dump1090 dump1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o $(LIBS) $(LDFLAGS)
- 
-+ppup1090: ppup1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
-+	$(CC) -g -o ppup1090 ppup1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o coaa1090.obj $(LIBS) $(LDFLAGS)
-+
- view1090: view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
- 	$(CC) -g -o view1090 view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o $(LIBS) $(LDFLAGS)
+@@ -28,3 +31,12 @@
  
  clean:
--	rm -f *.o dump1090 view1090
-+	rm -f *.o dump1090 ppup1090 view1090
+ 	rm -f *.o dump1090 view1090
 +
-+installbin-other:
++installbin:
 +	install -m755 dump1090 $(SBINDIR)
-+	install -m755 view1090 $(BINDIR)
-+
-+installbin-arm:
-+	install -m755 dump1090 $(SBINDIR)
-+	install -m755 ppup1090 $(SBINDIR)
 +	install -m755 view1090 $(BINDIR)
 +
 +installhtml:

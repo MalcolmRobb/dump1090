@@ -1,0 +1,9 @@
+# This is in the upstream git repo but is not actually used to build
+# any resulting binaries, nor does it end up in the resulting binary
+# package.
+dump1090: source-is-missing coaa1090.obj
+dump1090: source-contains-prebuilt-binary coaa1090.obj
+
+# Upstream does not provide a way to check for releases much less a GPG
+# signature.
+dump1090: debian-watch-may-check-gpg-signature
