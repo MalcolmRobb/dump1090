@@ -20,9 +20,11 @@ var planeObject = {
 	messages	: null,
 	seen		: null,
 
-	// Vaild...
+	// Valid...
 	vPosition	: false,
 	vTrack		: false,
+	vAltitude	: false,
+	vSpeed		: false,
 
 	// GMap Details
 	marker		: null,
@@ -123,44 +125,83 @@ var planeObject = {
 			selectPlaneByHex(this.icao);
 		},
 
+	// Clear plane from being displayed on map
+	funcClearPlaneDisplay	: function(){
+			if (this.marker) {
+				this.marker.setMap(null);
+				this.marker = null;
+			}
+			if (this.line) {
+				this.line.setMap(null);
+				this.line = null;
+			}
+			if (SelectedPlane == this.icao) {
+				if (this.is_selected) {
+					this.is_selected = false;
+					this.markerColor = MarkerColor;
+				}
+				SelectedPlane = null;
+			}
+		},
+
+
+	// For planes from whom we did not get data lately
+	funcUpdateStalePlane	: function(){
+			var ms = new Date().getTime();
+			var seen = Math.round((ms - this.updated) / 1000);
+			if (seen > PlaneTtl){
+				this.reapable = true;
+				this.funcClearPlaneDisplay();
+			}
+			this.seen = seen;
+		},
+		
+
 	// Update our data
 	funcUpdateData	: function(data){
 			// So we can find out if we moved
 			var oldlat 	= this.latitude;
 			var oldlon	= this.longitude;
 			var oldalt	= this.altitude;
+			var all_data_is_valids = {};
 
 			// Update all of our data
 			this.updated	= new Date().getTime();
-			this.altitude	= data.altitude;
-			this.speed	= data.speed;
-			this.track	= data.track;
-			this.latitude	= data.lat;
-			this.longitude	= data.lon;
-			this.flight	= data.flight;
-			this.squawk	= data.squawk;
 			this.icao	= data.hex;
-			this.messages	= data.messages;
-			this.seen	= data.seen;
+			this.messages	= (('messages' in data) ? data.messages : ((this.messages === null) ? 1 : this.messages + 1));
+			this.seen	= (('seen' in data) ? data.seen : 0);
 
-			// If no packet in over 58 seconds, consider the plane reapable
-			// This way we can hold it, but not show it just in case the plane comes back
-			if (this.seen > 58) {
-				this.reapable = true;
-				if (this.marker) {
-					this.marker.setMap(null);
-					this.marker = null;
-				}
-				if (this.line) {
-					this.line.setMap(null);
-					this.line = null;
-				}
-				if (SelectedPlane == this.icao) {
-					if (this.is_selected) {
-						this.is_selected = false;
+			var copyVal = function(plane, datafield, svd, invalid_val_chk, pf, vf) {
+				var planefield = ((typeof(pf) === 'undefined') ? datafield : pf);
+				var validfield = ((typeof(vf) === 'undefined') ? ('valid' + datafield) : vf);
+				var setvaldefault = ((typeof(svd) === 'undefined') ? 0 : svd);
+				var data_is_valid;
+				if ((datafield in data) && ((validfield in data) ? Boolean(data[validfield]) : ((typeof(invalid_val_chk) === 'undefined') ? true : (Boolean(invalid_val_chk) ? (data[datafield] !== setvaldefault) : false)))) {
+					plane[planefield] = data[datafield];
+					data_is_valid = true;
+				} else {
+					if (plane[planefield] === null){
+						plane[planefield] = setvaldefault;
 					}
-					SelectedPlane = null;
+					data_is_valid = false;
 				}
+				if (typeof(invalid_val_chk) === 'undefined') {
+					all_data_is_valids[datafield] = data_is_valid;
+				}
+			};
+			copyVal(this, 'altitude');
+			copyVal(this, 'speed');
+			copyVal(this, 'track');
+			copyVal(this, 'lat', 0, undefined, 'latitude', 'validposition');
+			copyVal(this, 'lon', 0, undefined, 'longitude', 'validposition');
+			copyVal(this, 'flight', '', true);
+			copyVal(this, 'squawk', '0000', true);
+
+			// If no packet in over <PlaneTtl> seconds, consider the plane reapable
+			// This way we can hold it, but not show it just in case the plane comes back
+			if (this.seen > PlaneTtl) {
+				this.reapable = true;
+				this.funcClearPlaneDisplay();
 			} else {
 				if (this.reapable == true) {
 				}
@@ -168,10 +209,10 @@ var planeObject = {
 			}
 
 			// Is the position valid?
-			if ((data.validposition == 1) && (this.reapable == false)) {
+			if ((data.validposition == 1 || (all_data_is_valids.lat && all_data_is_valids.lon)) && (this.reapable == false)) {
 				this.vPosition = true;
 
-				// Detech if the plane has moved
+				// Detect if the plane has moved
 				changeLat = false;
 				changeLon = false;
 				changeAlt = false;
@@ -198,10 +239,13 @@ var planeObject = {
 			}
 
 			// Do we have a valid track for the plane?
-			if (data.validtrack == 1)
-				this.vTrack = true;
-			else
-				this.vTrack = false;
+			this.vTrack = (data.validtrack == 1 || all_data_is_valids.track);
+
+			this.vSpeed = (data.validspeed === 1 || data.validspeed === true || all_data_is_valids.speed);
+			this.vAltitude = ((data.validaltitude === 1 || data.validaltitude === true) ? true : (data.validaltitude === -1 ? '' : all_data_is_valids.altitude));
+			if (this.vAltitude === ''){
+				this.altitude = 'grnd';
+			}
 		},
 
 	// Update our marker on the map
@@ -214,7 +258,7 @@ var planeObject = {
 					position: new google.maps.LatLng(this.latitude, this.longitude),
 					map: GoogleMap,
 					icon: this.funcGetIcon(),
-					visable: true
+					visible: true
 				});
 
 				// This is so we can match icao address

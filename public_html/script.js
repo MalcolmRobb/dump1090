@@ -7,18 +7,26 @@ var PlanesToReap  = 0;
 var SelectedPlane = null;
 var SpecialSquawk = false;
 
-var iSortCol=-1;
-var bSortASC=true;
+var iSortCol=Number(localStorage['iSortCol']) ||-1;
+var bSortASC=JSON.parse(localStorage['bSortASC'] || 'true');
 var bDefaultSortASC=true;
 var iDefaultSortCol=3;
 
+CONST_MAPTYPEID = null;
 // Get current map settings
 CenterLat = Number(localStorage['CenterLat']) || CONST_CENTERLAT;
 CenterLon = Number(localStorage['CenterLon']) || CONST_CENTERLON;
 ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
+ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
+MapTypeId = localStorage['MapTypeId'] || CONST_MAPTYPEID;
+
+var lastOsmTileUrlFormat = OsmTileUrlFormat;
 
 function fetchData() {
-	$.getJSON('/dump1090/data.json', function(data) {
+	$.getJSON(AjaxPlanesUrl).done(function(data) {
+		var added_planes = [];
+		var modified_planes = [];
+
 		PlanesOnMap = 0
 		SpecialSquawk = false;
 		
@@ -27,8 +35,10 @@ function fetchData() {
 			// Do we already have this plane object in Planes?
 			// If not make it.
 			if (Planes[data[j].hex]) {
+				modified_planes.push(data[j].hex);
 				var plane = Planes[data[j].hex];
 			} else {
+				added_planes.push(data[j].hex);
 				var plane = jQuery.extend(true, {}, planeObject);
 			}
 			
@@ -49,7 +59,24 @@ function fetchData() {
 			Planes[plane.icao] = plane;
 		}
 
+		// planes which were not sent ("stale") should be made reapable
+		for (p in Planes) {
+			if (Planes.hasOwnProperty(p)) {
+				if ((!Planes[p].reapable) && ($.inArray(p, modified_planes) === -1) && ($.inArray(p, added_planes) === -1)) {
+					Planes[p].funcUpdateStalePlane();
+				}
+			}
+		}
+
 		PlanesOnTable = data.length;
+	}).fail(function() {
+		for (p in Planes) {
+			if (Planes.hasOwnProperty(p)) {
+				if (!Planes[p].reapable) {
+					Planes[p].funcUpdateStalePlane();
+				}
+			}
+		}
 	});
 }
 
@@ -146,10 +173,10 @@ function initialize() {
 
 	GoogleMap = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
 
-	//Define OSM map type pointing at the OpenStreetMap tile server
+	//Define OSM map type pointing at an OpenStreetMap tile server
 	GoogleMap.mapTypes.set("OSM", new google.maps.ImageMapType({
 		getTileUrl: function(coord, zoom) {
-			return "http://tile.openstreetmap.org/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
+			return OsmTileUrlFormat.replace('{x}', coord.x).replace('{y}', coord.y).replace('{z}', zoom);
 		},
 		tileSize: new google.maps.Size(256, 256),
 		name: "OpenStreetMap",
@@ -157,7 +184,7 @@ function initialize() {
 	}));
 
 	GoogleMap.mapTypes.set("dark_map", styledMap);
-	
+
 	// Listeners for newly created Map
     google.maps.event.addListener(GoogleMap, 'center_changed', function() {
         localStorage['CenterLat'] = GoogleMap.getCenter().lat();
@@ -167,6 +194,15 @@ function initialize() {
     google.maps.event.addListener(GoogleMap, 'zoom_changed', function() {
         localStorage['ZoomLvl']  = GoogleMap.getZoom();
     }); 
+
+	google.maps.event.addListener(GoogleMap, 'maptypeid_changed', function() {
+		localStorage['MapTypeId'] = GoogleMap.getMapTypeId();
+	});
+
+	// Show selected map type, if any
+	if ((MapTypeId !== null) && (MapTypeId in GoogleMap.mapTypes)){
+		GoogleMap.setMapTypeId(MapTypeId);
+	}
 	
 	// Add home marker if requested
 	if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined')) {
@@ -191,7 +227,7 @@ function initialize() {
         }
 	}
 	
-	// These will run after page is complitely loaded
+	// These will run after page is completely loaded
 	$(window).load(function() {
         $('#dialog-modal').css('display', 'inline'); // Show hidden settings-windows content
     });
@@ -206,6 +242,7 @@ function initialize() {
 	window.setInterval(function() {
 		fetchData();
 		refreshTableInfo();
+		refreshMap();
 		refreshSelected();
 		reaper();
 		extendedPulse();
@@ -221,10 +258,10 @@ function reaper() {
 	for (var reap in Planes) {
 		// Is this plane possibly reapable?
 		if (Planes[reap].reapable == true) {
-			// Has it not been seen for 5 minutes?
+			// Has it not been seen for <PlaneDeleteTtl> seconds?
 			// This way we still have it if it returns before then
 			// Due to loss of signal or other reasons
-			if ((reaptime - Planes[reap].updated) > 300000) {
+			if ((reaptime - Planes[reap].updated) > (PlaneDeleteTtl * 1000)) {
 				// Reap it.
 				delete Planes[reap];
 			}
@@ -241,82 +278,102 @@ function refreshSelected() {
     }
 	
 	var columns = 2;
-	var html = '';
-	
+
+	var table = $('<table>')
+		.prop('id', 'selectedinfo')
+		.prop('width', '100%')
+		;
+	var newRow = function(){
+		return $('<tr>').appendTo(table);
+	};
+	var newField = function(row){
+		return $('<td>').appendTo(row);
+	};
 	if (selected) {
-    	html += '<table id="selectedinfo" width="100%">';
     } else {
-        html += '<table id="selectedinfo" class="dim" width="100%">';
+		table.addClass('dim');
     }
 	
 	// Flight header line including squawk if needed
+	var field = newField(newRow()).prop('colspan', columns).prop('id', 'selectedinfotitle');
+	var boldfaced = $('<b>').appendTo(field);
 	if (selected && selected.flight == "") {
-	    html += '<tr><td colspan="' + columns + '" id="selectedinfotitle"><b>N/A (' +
-	        selected.icao + ')</b>';
+		boldfaced.text('N/A (' + selected.icao + ')');
 	} else if (selected && selected.flight != "") {
-	    html += '<tr><td colspan="' + columns + '" id="selectedinfotitle"><b>' +
-	        selected.flight + '</b>';
+		boldfaced.text(selected.flight);
 	} else {
-	    html += '<tr><td colspan="' + columns + '" id="selectedinfotitle"><b>DUMP1090</b>';
+		boldfaced.text('DUMP1090');
 	}
 	
+	field.append(document.createTextNode('\u00a0'));
 	if (selected && selected.squawk == 7500) { // Lets hope we never see this... Aircraft Hijacking
-		html += '&nbsp;<span class="squawk7500">&nbsp;Squawking: Aircraft Hijacking&nbsp;</span>';
+		field.append($('<span>').addClass('squawk7500').text('\u00a0Squawking: Aircraft Hijacking\u00a0'));
 	} else if (selected && selected.squawk == 7600) { // Radio Failure
-		html += '&nbsp;<span class="squawk7600">&nbsp;Squawking: Radio Failure&nbsp;</span>';
+		field.append($('<span>').addClass('squawk7600').text('\u00a0Squawking: Radio Failure\u00a0'));
 	} else if (selected && selected.squawk == 7700) { // General Emergency
-		html += '&nbsp;<span class="squawk7700">&nbsp;Squawking: General Emergency&nbsp;</span>';
+		field.append($('<span>').addClass('squawk7700').text('\u00a0Squawking: General Emergency\u00a0'));
 	} else if (selected && selected.flight != '') {
-	    html += '&nbsp;<a href="http://www.flightstats.com/go/FlightStatus/flightStatusByFlight.do?';
-        html += 'flightNumber='+selected.flight+'" target="_blank">[FlightStats]</a>';
+		field.append($('<a>').prop('href', 'http://www.flightstats.com/go/FlightStatus/flightStatusByFlight.do?flightNumber=' + encodeURIComponent(selected.flight)).prop('target', '_blank').text('[FlightStats]'));
 	}
-	html += '<td></tr>';
 	
-	if (selected) {
+	var row = newRow();
+	var field = newField(row);
+	if (selected && (selected.vAltitude === true)) {
 	    if (Metric) {
-        	html += '<tr><td>Altitude: ' + Math.round(selected.altitude / 3.2828) + ' m</td>';
+			field.text('Altitude: ' + Math.round(selected.altitude / 3.2828) + ' m');
         } else {
-            html += '<tr><td>Altitude: ' + selected.altitude + ' ft</td>';
+			field.text('Altitude: ' + selected.altitude + ' ft');
         }
+	} else if (selected && (selected.vAltitude === '')) {
+		field.text('Altitude: ' + selected.altitude);
     } else {
-        html += '<tr><td>Altitude: n/a</td>';
+		field.text('Altitude: n/a');
     }
 		
+	var field = newField(row);
 	if (selected && selected.squawk != '0000') {
-		html += '<td>Squawk: ' + selected.squawk + '</td></tr>';
+		field.text('Squawk: ' + selected.squawk );
 	} else {
-	    html += '<td>Squawk: n/a</td></tr>';
+		field.text('Squawk: n/a');
 	}
 	
-	html += '<tr><td>Speed: ' 
-	if (selected) {
+	var row = newRow();
+	var val = 'Speed: ';
+	if (selected && selected.vSpeed) {
 	    if (Metric) {
-	        html += Math.round(selected.speed * 1.852) + ' km/h';
+	        val += Math.round(selected.speed * 1.852) + ' km/h';
 	    } else {
-	        html += selected.speed + ' kt';
+	        val += selected.speed + ' kt';
 	    }
 	} else {
-	    html += 'n/a';
+	    val += 'n/a';
 	}
-	html += '</td>';
+	var field = newField(row);
+	field.text(val);
 	
+	var field = newField(row);
 	if (selected) {
-        html += '<td>ICAO (hex): ' + selected.icao + '</td></tr>';
+		field.text('ICAO (hex): ' + selected.icao);
     } else {
-        html += '<td>ICAO (hex): n/a</td></tr>'; // Something is wrong if we are here
+		field.text('ICAO (hex): n/a');
     }
     
-    html += '<tr><td>Track: ' 
+	var row = newRow();
+	var val = 'Track: ';
 	if (selected && selected.vTrack) {
-	    html += selected.track + '&deg;' + ' (' + normalizeTrack(selected.track, selected.vTrack)[1] +')';
+	    val += selected.track + '\u00b0 (' + normalizeTrack(selected.track, selected.vTrack)[1] +')';
 	} else {
-	    html += 'n/a';
+	    val += 'n/a';
 	}
-	html += '</td><td>&nbsp;</td></tr>';
+	row.append($('<td>').text(val)).append($('<td>').text('\u00a0'));
 
-	html += '<tr><td colspan="' + columns + '" align="center">Lat/Long: ';
+	var row = newRow();
+	var field = newField(row).prop('colspan', columns).prop('align', 'center');
+	var val = 'Lat/Long: ';
+
 	if (selected && selected.vPosition) {
-	    html += selected.latitude + ', ' + selected.longitude + '</td></tr>';
+	    val += selected.latitude + ', ' + selected.longitude;
+		field.text(val);
 	    
 	    // Let's show some extra data if we have site coordinates
 	    if (SiteShow) {
@@ -330,21 +387,24 @@ function refreshSelected() {
                 dist /= 1852;
             }
             dist = (Math.round((dist)*10)/10).toFixed(1);
-            html += '<tr><td colspan="' + columns + '">Distance from Site: ' + dist +
-                (Metric ? ' km' : ' NM') + '</td></tr>';
+			newField(newRow()).prop('colspan', columns).text('Distance from Site: ' + dist + (Metric ? ' km' : ' NM'))
         } // End of SiteShow
 	} else {
 	    if (SiteShow) {
-	        html += '<tr><td colspan="' + columns + '">Distance from Site: n/a ' + 
-	            (Metric ? ' km' : ' NM') + '</td></tr>';
+			newField(newRow()).prop('colspan', columns).text('Distance from Site: n/a ' + (Metric ? ' km' : ' NM'));
 	    } else {
-    	    html += 'n/a</td></tr>';
+    	    val += 'n/a';
+			field.text(val);
     	}
 	}
 
-	html += '</table>';
 	
-	document.getElementById('plane_detail').innerHTML = html;
+	var ptl = $('#plane_detail');
+	if (ptl.children().length > 0){
+		ptl.children().replaceWith(table).remove();
+	} else {
+		ptl.append(table);
+	}
 }
 
 // Right now we have no means to validate the speed is good
@@ -393,97 +453,112 @@ function normalizeTrack(track, valid){
 
 // Refeshes the larger table of all the planes
 function refreshTableInfo() {
-	var html = '<table id="tableinfo" width="100%">';
-	html += '<thead style="background-color: #BBBBBB; cursor: pointer;">';
-	html += '<td onclick="setASC_DESC(\'0\');sortTable(\'tableinfo\',\'0\');">ICAO</td>';
-	html += '<td onclick="setASC_DESC(\'1\');sortTable(\'tableinfo\',\'1\');">Flight</td>';
-	html += '<td onclick="setASC_DESC(\'2\');sortTable(\'tableinfo\',\'2\');" ' +
-	    'align="right">Squawk</td>';
-	html += '<td onclick="setASC_DESC(\'3\');sortTable(\'tableinfo\',\'3\');" ' +
-	    'align="right">Altitude</td>';
-	html += '<td onclick="setASC_DESC(\'4\');sortTable(\'tableinfo\',\'4\');" ' +
-	    'align="right">Speed</td>';
-	html += '<td onclick="setASC_DESC(\'5\');sortTable(\'tableinfo\',\'5\');" ' +
-	    'align="right">Track</td>';
-	html += '<td onclick="setASC_DESC(\'6\');sortTable(\'tableinfo\',\'6\');" ' +
-	    'align="right">Msgs</td>';
-	html += '<td onclick="setASC_DESC(\'7\');sortTable(\'tableinfo\',\'7\');" ' +
-	    'align="right">Seen</td></thead><tbody>';
+	var table = $('<table>').prop('id', 'tableinfo').prop('width', '100%');
+	var thead = $('<thead>').css('background-color', '#BBBBBB').css('cursor', 'pointer').appendTo(table);
+	var appendHeaderField = function(fieldid, fieldlabel){
+		return $('<td>')
+			.click(function(){setASC_DESC(fieldid); sortTable('tableinfo', fieldid)})
+			.prop('align', 'right')
+			.text(fieldlabel)
+			.appendTo(thead)
+			;
+	};
+	appendHeaderField('0', 'ICAO');
+	appendHeaderField('1', 'Flight');
+	appendHeaderField('2', 'Squawk');
+	appendHeaderField('3', 'Altitude');
+	appendHeaderField('4', 'Speed');
+	appendHeaderField('5', 'Track');
+	appendHeaderField('6', 'Msgs');
+	appendHeaderField('7', 'Seen');
+	var tbody = $('<tbody>').appendTo(table);
 	for (var tablep in Planes) {
 		var tableplane = Planes[tablep]
 		if (!tableplane.reapable) {
+			var row = $('<tr>').appendTo(tbody);
+			row.click(function(){
+				var hex = $(this).find('td:first').text();
+				if (hex != "ICAO") {
+					selectPlaneByHex(hex);
+					refreshTableInfo();
+					refreshSelected();
+				}
+			});
+			var newRField = function(){
+				return $('<td>').prop('align', 'right').appendTo(row);
+			};
 			var specialStyle = "";
 			// Is this the plane we selected?
 			if (tableplane.icao == SelectedPlane) {
 				specialStyle += " selected";
+				row.addClass('selected');
 			}
 			// Lets hope we never see this... Aircraft Hijacking
 			if (tableplane.squawk == 7500) {
 				specialStyle += " squawk7500";
+				row.addClass('squawk7500');
 			}
 			// Radio Failure
 			if (tableplane.squawk == 7600) {
 				specialStyle += " squawk7600";
+				row.addClass('squawk7600');
 			}
-			// Emergancy
+			// Emergency
 			if (tableplane.squawk == 7700) {
 				specialStyle += " squawk7700";
+				row.addClass('squawk7700');
 			}
 			
 			if (tableplane.vPosition == true) {
-				html += '<tr class="plane_table_row vPosition' + specialStyle + '">';
+				row.addClass('plane_table_row').addClass('vPosition');
 			} else {
-				html += '<tr class="plane_table_row ' + specialStyle + '">';
+				row.addClass('plane_table_row');
 		    }
 		    
-			html += '<td>' + tableplane.icao + '</td>';
-			html += '<td>' + tableplane.flight + '</td>';
+			row
+				.append($('<td>').text(tableplane.icao))
+				.append($('<td>').text(tableplane.flight))
+				;
+			var field = newRField();
 			if (tableplane.squawk != '0000' ) {
-    			html += '<td align="right">' + tableplane.squawk + '</td>';
+				field.text(tableplane.squawk);
     	    } else {
-    	        html += '<td align="right">&nbsp;</td>';
+				field.text('\u00a0');
     	    }
     	    
+			var field_alt = newRField();
+			var field_spd = newRField();
     	    if (Metric) {
-    			html += '<td align="right">' + Math.round(tableplane.altitude / 3.2828) + '</td>';
-    			html += '<td align="right">' + Math.round(tableplane.speed * 1.852) + '</td>';
+				field_alt.text(tableplane.vAltitude === true ? Math.round(tableplane.altitude / 3.2828).toString() : (tableplane.vAltitude === '' ? tableplane.altitude : '\u00a0'));
+    			field_spd.text(tableplane.vSpeed ? Math.round(tableplane.speed * 1.852).toString() : '\u00a0');
     	    } else {
-    	        html += '<td align="right">' + tableplane.altitude + '</td>';
-    	        html += '<td align="right">' + tableplane.speed + '</td>';
+				field_alt.text(tableplane.vAltitude === true ? tableplane.altitude.toString() : (tableplane.vAltitude === '' ? tableplane.altitude : '\u00a0'));
+    			field_spd.text(tableplane.vSpeed ? tableplane.speed.toString() : '\u00a0');
     	    }
 			
-			html += '<td align="right">';
+			var field = newRField();
 			if (tableplane.vTrack) {
-    			 html += normalizeTrack(tableplane.track, tableplane.vTrack)[2];
-    			 // html += ' (' + normalizeTrack(tableplane.track, tableplane.vTrack)[1] + ')';
+    			 field.text(normalizeTrack(tableplane.track, tableplane.vTrack)[2].toString());
     	    } else {
-    	        html += '&nbsp;';
+				field.text('\u00a0');
     	    }
-    	    html += '</td>';
-			html += '<td align="right">' + tableplane.messages + '</td>';
-			html += '<td align="right">' + tableplane.seen + '</td>';
-			html += '</tr>';
+			newRField().text(tableplane.messages);
+			newRField().text(tableplane.seen);
 		}
 	}
-	html += '</tbody></table>';
 
-	document.getElementById('planes_table').innerHTML = html;
+	var ptl = $('#planes_table');
+	if (ptl.children().length > 0){
+		ptl.children().replaceWith(table).remove();
+	} else {
+		ptl.append(table);
+	}
 
 	if (SpecialSquawk) {
     	$('#SpecialSquawkWarning').css('display', 'inline');
     } else {
         $('#SpecialSquawkWarning').css('display', 'none');
     }
-
-	// Click event for table
-	$('#planes_table').find('tr').click( function(){
-		var hex = $(this).find('td:first').text();
-		if (hex != "ICAO") {
-			selectPlaneByHex(hex);
-			refreshTableInfo();
-			refreshSelected();
-		}
-	});
 
 	sortTable("tableinfo");
 }
@@ -496,6 +571,7 @@ function setASC_DESC(iCol) {
 	} else {
 		bSortASC=bDefaultSortASC;
 	}
+	localStorage['bSortASC'] = JSON.stringify(bSortASC);
 }
 
 function sortTable(szTableID,iCol) { 
@@ -519,6 +595,7 @@ function sortTable(szTableID,iCol) {
 
 	//store the col #
 	iSortCol=iCol;
+	localStorage['iSortCol'] = iSortCol;
 
 	//determine if we are delaing with numerical, or alphanumeric content
 	var bNumeric = false;
@@ -586,11 +663,13 @@ function resetMap() {
     localStorage['CenterLat'] = CONST_CENTERLAT;
     localStorage['CenterLon'] = CONST_CENTERLON;
     localStorage['ZoomLvl']   = CONST_ZOOMLVL;
+    localStorage['MapTypeId']   = CONST_MAPTYPEID;
     
     // Try to read values from localStorage else use CONST_s
     CenterLat = Number(localStorage['CenterLat']) || CONST_CENTERLAT;
     CenterLon = Number(localStorage['CenterLon']) || CONST_CENTERLON;
     ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
+    MapTypeId = localStorage['MapTypeId'] || CONST_MAPTYPEID;
     
     // Set and refresh
 	GoogleMap.setZoom(parseInt(ZoomLvl));
@@ -602,6 +681,16 @@ function resetMap() {
 
 	refreshSelected();
 	refreshTableInfo();
+}
+
+function refreshMap() {
+	var lastZoom = GoogleMap.getZoom();
+	// Try to refresh OSM if tile URL changes
+	if (OsmTileUrlFormat !== lastOsmTileUrlFormat){
+		lastOsmTileUrlFormat = OsmTileUrlFormat;
+		GoogleMap.setZoom(lastZoom - 1);
+		window.setTimeout(function(){GoogleMap.setZoom(lastZoom);}, 260);
+	};
 }
 
 function drawCircle(marker, distance) {
