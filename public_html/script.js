@@ -393,22 +393,7 @@ function normalizeTrack(track, valid){
 
 // Refeshes the larger table of all the planes
 function refreshTableInfo() {
-	var html = '<table id="tableinfo" width="100%">';
-	html += '<thead style="background-color: #BBBBBB; cursor: pointer;">';
-	html += '<td onclick="setASC_DESC(\'0\');sortTable(\'tableinfo\',\'0\');">ICAO</td>';
-	html += '<td onclick="setASC_DESC(\'1\');sortTable(\'tableinfo\',\'1\');">Flight</td>';
-	html += '<td onclick="setASC_DESC(\'2\');sortTable(\'tableinfo\',\'2\');" ' +
-	    'align="right">Squawk</td>';
-	html += '<td onclick="setASC_DESC(\'3\');sortTable(\'tableinfo\',\'3\');" ' +
-	    'align="right">Altitude</td>';
-	html += '<td onclick="setASC_DESC(\'4\');sortTable(\'tableinfo\',\'4\');" ' +
-	    'align="right">Speed</td>';
-	html += '<td onclick="setASC_DESC(\'5\');sortTable(\'tableinfo\',\'5\');" ' +
-	    'align="right">Track</td>';
-	html += '<td onclick="setASC_DESC(\'6\');sortTable(\'tableinfo\',\'6\');" ' +
-	    'align="right">Msgs</td>';
-	html += '<td onclick="setASC_DESC(\'7\');sortTable(\'tableinfo\',\'7\');" ' +
-	    'align="right">Seen</td></thead><tbody>';
+	var html = '';
 	for (var tablep in Planes) {
 		var tableplane = Planes[tablep]
 		if (!tableplane.reapable) {
@@ -431,9 +416,9 @@ function refreshTableInfo() {
 			}
 			
 			if (tableplane.vPosition == true) {
-				html += '<tr class="plane_table_row vPosition' + specialStyle + '">';
+				html += '<tr onclick="planeTRclick(\''+tableplane.icao+'\')" class="plane_table_row vPosition' + specialStyle + '">';
 			} else {
-				html += '<tr class="plane_table_row ' + specialStyle + '">';
+				html += '<tr onclick="planeTRclick(\''+tableplane.icao+'\')" class="plane_table_row ' + specialStyle + '">';
 		    }
 		    
 			html += '<td>' + tableplane.icao + '</td>';
@@ -465,25 +450,14 @@ function refreshTableInfo() {
 			html += '</tr>';
 		}
 	}
-	html += '</tbody></table>';
 
-	document.getElementById('planes_table').innerHTML = html;
+	document.getElementById('dataTable').innerHTML = html;
 
 	if (SpecialSquawk) {
     	$('#SpecialSquawkWarning').css('display', 'inline');
     } else {
         $('#SpecialSquawkWarning').css('display', 'none');
     }
-
-	// Click event for table
-	$('#planes_table').find('tr').click( function(){
-		var hex = $(this).find('td:first').text();
-		if (hex != "ICAO") {
-			selectPlaneByHex(hex);
-			refreshTableInfo();
-			refreshSelected();
-		}
-	});
 
 	sortTable("tableinfo");
 }
@@ -627,4 +601,10 @@ function drawCircle(marker, distance) {
       strokeOpacity: 0.3
     });
     circle.bindTo('center', marker, 'position');
+}
+
+function planeTRclick(hex) {
+	selectPlaneByHex(hex);
+	refreshTableInfo();
+	refreshSelected();
 }

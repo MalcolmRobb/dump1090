@@ -49,7 +49,22 @@
 
 				<div id="plane_detail"></div>
 				<div id="options"></div>
-				<div id="planes_table"></div>
+				<div id="planes_table">
+					<table id="tableinfo" width="100%">
+						<thead style="background-color: #BBBBBB; cursor: pointer;">
+							<td onclick="setASC_DESC('0');sortTable('tableinfo','0');">ICAO</td>
+							<td onclick="setASC_DESC('1');sortTable('tableinfo','1');">Flight</td>
+							<td onclick="setASC_DESC('2');sortTable('tableinfo','2');" align="right">Squawk</td>
+							<td onclick="setASC_DESC('3');sortTable('tableinfo','3');" align="right">Altitude</td>
+							<td onclick="setASC_DESC('4');sortTable('tableinfo','4');" align="right">Speed</td>
+							<td onclick="setASC_DESC('5');sortTable('tableinfo','5');" align="right">Track</td>
+							<td onclick="setASC_DESC('6');sortTable('tableinfo','6');" align="right">Msgs</td>
+							<td onclick="setASC_DESC('7');sortTable('tableinfo','7');" align="right">Seen</td>
+						</thead>
+						<tbody id="dataTable">
+						</tbody>
+					</table>
+				</div>
 				<div id="plane_extension"></div>
 			</div>
 		</div>
