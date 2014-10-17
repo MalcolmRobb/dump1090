@@ -5,50 +5,50 @@ Source: git clone https://github.com/MalcolmRobb/dump1090
 Files: *
 Copyright: 2012 Salvatore Sanfilippo <antirez@gmail.com>
            2014 Malcolm Robb <support@attavionics.com>
-License: BSD-3-Clause
+License: BSD-3-clause
 
 Files: anet.*
 Copyright: 2006-2012 Salvatore Sanfilippo <antirez@gmail.com>
-License: BSD-3-Clause
+License: BSD-3-clause
 
 Files: dump1090.*
 Copyright: 2012 Salvatore Sanfilippo <antirez@gmail.com>
-License: BSD-2-Clause
+License: BSD-2-clause
 
 Files: interactive.*
 Copyright: 2012 Salvatore Sanfilippo <antirez@gmail.com>
-License: BSD-2-Clause
+License: BSD-2-clause
 
 Files: mode_ac.*
 Copyright: 2012 Salvatore Sanfilippo <antirez@gmail.com>
-License: BSD-2-Clause
+License: BSD-2-clause
 
 Files: net_io.*
 Copyright: 2012 Salvatore Sanfilippo <antirez@gmail.com>
-License: BSD-2-Clause
+License: BSD-2-clause
 
 Files: ppup1090.*
 Copyright: 2013 Malcolm Robb <Support@ATTAvionics.com>
-License: BSD-2-Clause
+License: BSD-2-clause
 
 Files: rtl-sdr/rtl-sdr_export.c
 Copyright: 2012 Hoernchen <la@tfc-server.de>
-License: GPL-2.0+
+License: GPL-2.0
 
 Files: rtl-sdr/rtl-sdr.h
 Copyright: 2012 Steve Markgraf <steve@steve-m.de>
            2012 Dimitri Stolnikov <horiz0n@gmx.net>
-License: GPL-2.0+
+License: GPL-2.0
 
 Files: view1090.*
 Copyright: 2014 Malcolm Robb <Support@ATTAvionics.com
-License: BSD-2-Clause
+License: BSD-2-clause
 
 Files: debian/*
 Copyright: 2014 Matthew Ernisse <mernisse@ub3rgeek.net>
-License: BSD-2-Clause
+License: BSD-2-clause
 
-License: BSD-2-Clause
+License: BSD-2-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are
  met:
@@ -72,7 +72,7 @@ License: BSD-2-Clause
  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-License: BSD-3-Clause
+License: BSD-3-clause
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
  .
@@ -97,7 +97,7 @@ License: BSD-3-Clause
  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  POSSIBILITY OF SUCH DAMAGE.
 
-License: GPL-2.0+
+License: GPL-2.0
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 2 of the License, or

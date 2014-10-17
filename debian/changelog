@@ -1,3 +1,11 @@
+dump1090 (1.09.1007.14+dfsg-1) unstable; urgency=low
+  * Merge changes from upstream.
+  * Remove external dependancies on jQuery.
+  * Repack upstream to remove closed-source blob.
+  * Update packaging to reflect Debian Hamradio Maintainers standards.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Fri, 17 Oct 2014 17:52:56 +0000
+
 dump1090 (1.09.0608.14-3) unstable; urgency=low
 
   * Refuse to build ppup1090 as it depends on a closed-source blob.
