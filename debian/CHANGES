@@ -1,4 +1,245 @@
 # Generated with: git log --pretty=format:"Commit: %h%n%B%N%n%aN <%ae>%n%n"
+
+Commit: 65751ed
+Merge pull request #45 from mutability/net-client-eof-handling
+
+Detect client EOF properly. Handle EWOULDBLOCK.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: dee6ded
+Merge pull request #35 from mutability/use-repaired-checksums
+
+Check if bit correction happened before bailing out due to a bad CRC.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 4f449a8
+Make Pull # compatible with Pull #42
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 16a900c
+Merge pull request #42 from mutability/prefer-global-cpr
+
+Prefer to use global CPR decoding where possible.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: bc496fb
+Merge pull request #43 from mutability/more-stats
+
+Add --stats-every option, add sample block counters
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 5a5c52d
+Merge remote-tracking branch 'origin/pr/46'
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 98f5105
+Merge pull request #47 from mutability/flightradar-compat-fix
+
+Always emit a message reception time, as otherwise the FR24 uploader is unhappy.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 15f3408
+Always emit a message reception time, as otherwise the FR24 uploader is unhappy.
+
+When we don't have a time available (e.g. remote message) use the system time.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: bf11136
+Merge pull request #44 from mutability/fix-obinary
+
+Only use O_BINARY on Win32
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 186cac5
+Use the anet-reported error string when reporting bind errors.
+
+errno may have been modified by the time you see it.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: a513c36
+Detect client EOF properly. Handle EWOULDBLOCK.
+
+Client disconnection appears as a read of 0 bytes.
+Without a test for this, dump1090 continues to poll that client forever.
+
+Also, read() may return EWOULDBLOCK as well as EAGAIN
+for "no data right now", so handle that.
+
+I don't know if there is an equivalent Win32 bug here as the Win32
+interfaces seem subtly different to vanilla POSIX.
+
+The following test/break can probably be removed if Win32 needs
+the same fix.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 98c7c73
+Only use O_BINARY on Win32
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: c09c684
+Merge pull request #41 from mutability/skip-remote-timestamps
+
+Don't output message reception time in SBS format for remote messages.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: e3bbf7b
+Read Files are binary
+
+When replaying recordings, the read files are binary, so the file open
+needs to reflect this so that spurious end of file characters aren't
+misinterpreted.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: aa063ba
+Undo Parts of Pull request #29
+
+The table sizing doesn't seem to work in M$ IE8 and IE9.
+
+Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: 732fe52
+Merge pull request #28 from ddeitterick/change_plotted_plane_table_bg_color
+
+Change the Background Color for a Plotted Plane
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 9d3452f
+Merge pull request #27 from ddeitterick/format_track_field
+
+Add Degree Symbol to Track Value
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 5cdcc22
+Merge pull request #29 from tslocum/bettermap
+
+Improve map display layout and styling
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: bd151e1
+Merge pull request #40 from mutability/discard-bad-cpr-latitudes
+
+Reject out-of-range latitudes when doing CPR decoding.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: 8725ba0
+Merge pull request #39 from mutability/fractional-gain
+
+Fix --gain with fractional gain values.
+MalcolmRobb <Support@ATTAvionics.com>
+
+
+Commit: b98c685
+Move the stats reset strictly after stats display, so the total message count is shown correctly.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 3eb39ab
+Don't output message reception time in SBS format for remote messages.
+
+For remotely received messages that have a mlat timestamp, we have no
+useful way of turning that timestamp into a wallclock timestamp, so
+don't try, or we'll just produce wildly wrong results (_days_ in error)
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 4fc2697
+Add stats for number of sample blocks processed and dropped.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 1006167
+Add --stats-every <secs> option.
+
+Periodically displays and resets stats.
+Useful for unattended operation.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 661246d
+Prefer to use global CPR decoding where possible.
+
+There is a danger in always using relative decoding where possible.
+If there is an undetected error in the first pair of messages received,
+then global CPR decoding will give a bad position, and subsequent
+relative decoding will just walk around near that bad position even
+though many error-free pairs of odd/even messages may have been received.
+
+The first pair of position messages also tends to be the most error-prone, as
+they are usually received at the extreme edge of receiver range.
+
+(I see this happen at least once a day in practice)
+
+So, instead, prefer to use global decoding when we have sufficiently recent data.
+With recent data this should always be as good as relative decoding, and it
+avoids getting stuck with bad data for long periods of time. If we don't have
+enough recent data for a global solution, fall back to relative decoding.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: e5b3572
+Reject out-of-range latitudes when doing CPR decoding.
+
+If a CPR message with an undetected error is received this can produce out-of-range results for latitude.
+e.g. even latitude of 78000, odd latitude of 0 produces a latitude index j=35 and rlat0 = 213.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 95ccb90
+Fix --gain with fractional gain values.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: 7fab5b0
+Check if bit correction happened before bailing out due to a bad CRC.
+
+Oliver Jowett <oliver@mutability.co.uk>
+
+
+Commit: b7d01c5
+Don't restrict sidebar width
+
+Trevor Slocum <tslocum@gmail.com>
+
+
+Commit: 14ff25b
+Improve map display layout and styling
+
+Trevor Slocum <tslocum@gmail.com>
+
+
 Commit: a82df07
 Version 1.09.0608.14
 
@@ -47,6 +288,24 @@ Version 1.09.1007.14
 Updates to support COAA Planeplotter Ground Station on an RPi
 
 Malcolm Robb <Support@ATTAvionics.com>
+
+
+Commit: df4a8ce
+Change the Background Color for a Plotted Plane
+
+Changed the background color for a plotted plane in the planes table to
+something that was more easily visible.
+
+ddeitterick <doug@deitterick.com>
+
+
+Commit: 0c2487d
+Add Degree Symbol to Track Value
+
+Add the degree symbol to the "Track:" value in the plane details
+section.
+
+ddeitterick <doug@deitterick.com>
 
 
 Commit: a17e5b0
