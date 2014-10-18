@@ -4,7 +4,7 @@ Forwarded: not-needed
 
 --- a/Makefile
 +++ b/Makefile
-@@ -4,18 +4,21 @@
+@@ -4,17 +4,19 @@
  #
  PROGNAME=dump1090
  
@@ -13,14 +13,13 @@ Forwarded: not-needed
 -SHAREDIR=$(PREFIX)/share/$(PROGNAME)
 -EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
 -endif
--
--CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
--LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 +BINDIR=$(DESTDIR)/usr/bin
 +SBINDIR=$(DESTDIR)/usr/sbin
 +SHAREDIR=$(DESTDIR)/usr/share/$(PROGNAME)
 +EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)/public_html\"
-+
+ 
+-CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
+-LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 +CFLAGS=-O2 -g -Wall -W $(shell pkg-config --cflags librtlsdr)
 +CFLAGS += $(shell dpkg-buildflags --get CFLAGS)
 +CFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
@@ -31,20 +30,5 @@ Forwarded: not-needed
  
 -
  all: dump1090 view1090
-+install: installbin installhtml
  
  %.o: %.c
- 	$(CC) $(CFLAGS) $(EXTRACFLAGS) -c $<
-@@ -28,3 +31,12 @@
- 
- clean:
- 	rm -f *.o dump1090 view1090
-+
-+installbin:
-+	install -m755 dump1090 $(SBINDIR)
-+	install -m755 view1090 $(BINDIR)
-+
-+installhtml:
-+	install -d -m 755 $(SHAREDIR)/public_html
-+	cp -R public_html/* $(SHAREDIR)/public_html
-+

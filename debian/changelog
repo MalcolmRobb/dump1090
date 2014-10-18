@@ -1,8 +1,12 @@
 dump1090 (1.09.1007.14+dfsg-1) unstable; urgency=low
+
   * Merge changes from upstream.
-  * Remove external dependancies on jQuery.
+  * Depend on jQuery and jQuery UI to remove links from gmap.html to the
+    Google CDN.  Remove associated lintian overrides.
   * Repack upstream to remove closed-source blob.
   * Update packaging to reflect Debian Hamradio Maintainers standards.
+  * Patch less of the stock Makefile by using dh_install helper.
+  * Remove broken watch file.
 
  -- Matthew Ernisse <mernisse@ub3rgeek.net>  Fri, 17 Oct 2014 17:52:56 +0000
 

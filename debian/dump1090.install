@@ -1,0 +1,3 @@
+dump1090 /usr/sbin
+view1090 /usr/bin
+public_html/* /usr/share/dump1090/public_html
