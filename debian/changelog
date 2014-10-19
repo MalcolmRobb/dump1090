@@ -1,3 +1,12 @@
+dump1090 (1.09.1007.14+dfsg-2) unstable; urgency=low
+
+  * Add buffering to the HTTP server so we can serve jQuery and associated
+    files ourselves.
+  * Have the HTTP server return code 404 instead of 200 if it has problems
+    opening or reading files.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Sun, 19 Oct 2014 16:57:54 +0000
+
 dump1090 (1.09.1007.14+dfsg-1) unstable; urgency=low
 
   * Merge changes from upstream.

@@ -1,2 +1,3 @@
 00-makefile.patch
 01-jquery.patch
+02-http-buffer.patch
