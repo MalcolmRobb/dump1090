@@ -1,0 +1,19 @@
+
+README for dump1090
+===================
+
+ * ppup1090(1)
+
+It appears that ppup1090 depends on a binary object from COAA (the makers
+of the Planeplotter software) which does not have a license attached to it.   
+This violates the Debian Free Software Guidelines (DFSG) and so it is not
+built or included with the package.
+
+If you wish to build ppup1090 for your system you can visit the author's
+GitHub page <https://github.com/MalcolmRobb/dump1090>  which includes
+instructions for building that binary.
+
+ * dump1090(1)
+
+The web interface includes remotely hosted JavaScript files that 
+provide the interface to Google Maps.

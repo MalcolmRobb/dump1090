@@ -1,0 +1,3 @@
+# The web UI uses Google Maps, which cannot be served locally.
+dump1090 binary: usr/share/dump1090/public_html/gmap.html https://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry
+

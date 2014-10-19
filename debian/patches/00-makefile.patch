@@ -1,0 +1,34 @@
+Author: Matthew John Ernisse <mernisse@ub3rgeek.net>
+Description: Update Makefile to work with the dh build system.
+Forwarded: not-needed
+
+--- a/Makefile
++++ b/Makefile
+@@ -4,17 +4,19 @@
+ #
+ PROGNAME=dump1090
+ 
+-ifdef PREFIX
+-BINDIR=$(PREFIX)/bin
+-SHAREDIR=$(PREFIX)/share/$(PROGNAME)
+-EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
+-endif
++BINDIR=$(DESTDIR)/usr/bin
++SBINDIR=$(DESTDIR)/usr/sbin
++SHAREDIR=$(DESTDIR)/usr/share/$(PROGNAME)
++EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)/public_html\"
+ 
+-CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
+-LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
++CFLAGS=-O2 -g -Wall -W $(shell pkg-config --cflags librtlsdr)
++CFLAGS += $(shell dpkg-buildflags --get CFLAGS)
++CFLAGS += $(shell dpkg-buildflags --get CPPFLAGS)
++CFLAGS += $(shell dpkg-buildflags --get CXXFLAGS)
++LIBS=$(shell pkg-config --libs librtlsdr) -lpthread -lm
++LDFLAGS=$(shell dpkg-buildflags --get LDFLAGS)
+ CC=gcc
+ 
+-
+ all: dump1090 view1090
+ 
+ %.o: %.c

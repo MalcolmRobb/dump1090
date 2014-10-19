@@ -1,0 +1,12 @@
+# Change to "yes" to start the daemon
+RUN="no"
+
+# Set your lattitude and longitiude.
+LAT=""
+LON=""
+
+# Set to your PPM offset if you have calibrated your dongle
+PPM=""
+
+# Additional options that are passed to the daemon.
+DAEMON_ARGS="--net --fix --phase-enhance --enable-agc --net-ro-size 500 --net-ro-rate 5 --quiet"

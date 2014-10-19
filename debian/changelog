@@ -1,0 +1,43 @@
+dump1090 (1.09.1007.14+dfsg-2) unstable; urgency=low
+
+  * Add buffering to the HTTP server so we can serve jQuery and associated
+    files ourselves.
+  * Have the HTTP server return code 404 instead of 200 if it has problems
+    opening or reading files.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Sun, 19 Oct 2014 16:57:54 +0000
+
+dump1090 (1.09.1007.14+dfsg-1) unstable; urgency=low
+
+  * Merge changes from upstream.
+  * Depend on jQuery and jQuery UI to remove links from gmap.html to the
+    Google CDN.  Remove associated lintian overrides.
+  * Repack upstream to remove closed-source blob.
+  * Update packaging to reflect Debian Hamradio Maintainers standards.
+  * Patch less of the stock Makefile by using dh_install helper.
+  * Remove broken watch file.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Fri, 17 Oct 2014 17:52:56 +0000
+
+dump1090 (1.09.0608.14-3) unstable; urgency=low
+
+  * Refuse to build ppup1090 as it depends on a closed-source blob.
+  * Add patch headers to 00-makefile.patch
+  * Pull upstream log into CHANGELOG.
+  * Update copyright information.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Sun, 17 Aug 2014 20:57:34 +0000
+
+dump1090 (1.09.0608.14-2) unstable; urgency=low
+
+  * Add man pages per Debian Policy.
+  * Patch Makefile to only build the Planeplotter uploader on supported
+    architectures.
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Sun, 17 Aug 2014 17:13:57 +0000
+
+dump1090 (1.09.0608.14-1) unstable; urgency=low
+
+  * Initial release (Closes: #712830).
+
+ -- Matthew Ernisse <mernisse@ub3rgeek.net>  Sat, 16 Aug 2014 20:26:47 +0000

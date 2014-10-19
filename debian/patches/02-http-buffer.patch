@@ -1,0 +1,89 @@
+Author: Matthew John Ernisse <mernisse@ub3rgeek.net>
+Description: Add basic buffering to the HTTP server in net_io.c to allow us to
+ serve larger than SO_SNDBUF files.
+Forwarded: no
+
+--- a/net_io.c
++++ b/net_io.c
+@@ -686,6 +686,8 @@
+ //
+ //=========================================================================
+ //
++#define HTTP_OK "200 OK";
++#define HTTP_NOTFOUND "404 Not Found";
+ #define MODES_CONTENT_TYPE_HTML "text/html;charset=utf-8"
+ #define MODES_CONTENT_TYPE_CSS  "text/css;charset=utf-8"
+ #define MODES_CONTENT_TYPE_JSON "application/json;charset=utf-8"
+@@ -701,6 +703,7 @@
+ int handleHTTPRequest(struct client *c, char *p) {
+     char hdr[512];
+     int clen, hdrlen;
++    char *httpcode = HTTP_OK;
+     int httpver, keepalive;
+     char *url, *content;
+     char ctype[48];
+@@ -752,13 +755,17 @@
+         if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY)) != -1) {
+             content = (char *) malloc(sbuf.st_size);
+             if (read(fd, content, sbuf.st_size) == -1) {
+-                snprintf(content, sbuf.st_size, "Error reading from file: %s", strerror(errno));
++                snprintf(content, sbuf.st_size, "Error reading from %s: %s",
++                    getFile, strerror(errno));
++                httpcode = HTTP_NOTFOUND;
+             }
+             clen = sbuf.st_size;
+         } else {
+             char buf[128];
+-            clen = snprintf(buf,sizeof(buf),"Error opening HTML file: %s", strerror(errno));
++            clen = snprintf(buf, sizeof(buf), "Error opening %s: %s",
++                getFile, strerror(errno));
+             content = strdup(buf);
++            httpcode = HTTP_NOTFOUND;
+         }
+         
+         if (fd != -1) {
+@@ -782,7 +789,7 @@
+ 
+     // Create the header and send the reply
+     hdrlen = snprintf(hdr, sizeof(hdr),
+-        "HTTP/1.1 200 OK\r\n"
++        "HTTP/1.1 %s\r\n"
+         "Server: Dump1090\r\n"
+         "Content-Type: %s\r\n"
+         "Connection: %s\r\n"
+@@ -790,6 +797,7 @@
+         "Cache-Control: no-cache, must-revalidate\r\n"
+         "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+         "\r\n",
++        httpcode,
+         ctype,
+         keepalive ? "keep-alive" : "close",
+         clen);
+@@ -800,15 +808,24 @@
+ 
+     // Send header and content.
+ #ifndef _WIN32
+-    if ( (write(c->fd, hdr, hdrlen) != hdrlen) 
+-      || (write(c->fd, content, clen) != clen) ) {
++    if (anetWrite(c->fd, hdr, hdrlen) != hdrlen) {
++        perror("HTTP short write of reply header");
++        free(content);
++        return 1;
++    }
++
++    if (anetWrite(c->fd, content, clen) != clen) {
++        perror("HTTP short write of content");
++        free(content);
++        return 1;
++    }
+ #else
+     if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen) 
+       || (send(c->fd, content, clen, 0) != clen) ) {
+-#endif
+         free(content);
+         return 1;
+     }
++#endif
+     free(content);
+     Modes.stat_http_requests++;
+     return !keepalive;
