@@ -53,6 +53,36 @@ function fetchData() {
 	});
 }
 
+function fetchJSONConfig() {
+	// Load config from json if able.
+	$.getJSON('/dump1090/config.json', function(data) {
+		if (!("SiteLat" in data) || !("SiteLon" in data)) {
+			return;
+		}
+		SiteShow = true;
+		SiteLat = data["SiteLat"];
+		SiteLon = data["SiteLon"];
+		var markerImage = new google.maps.MarkerImage(
+			'http://maps.google.com/mapfiles/kml/pal4/icon57.png',
+			new google.maps.Size(32, 32),
+			new google.maps.Point(0, 0),
+			new google.maps.Point(16, 16));
+		var marker = new google.maps.Marker({
+			position: new google.maps.LatLng(SiteLat, SiteLon),
+			map: GoogleMap,
+			icon: markerImage,
+			title: 'My Radar Site',
+			zIndex: -99999
+		});
+
+		if (SiteCircles) {
+			for (var i=0;i<SiteCirclesDistances.length;i++) {
+				drawCircle(marker, SiteCirclesDistances[i]);
+			}
+		}
+	});
+}
+
 // Initalizes the map and starts up our timers to call various functions
 function initialize() {
 	// Make a list of all the available map IDs
@@ -167,34 +197,14 @@ function initialize() {
     google.maps.event.addListener(GoogleMap, 'zoom_changed', function() {
         localStorage['ZoomLvl']  = GoogleMap.getZoom();
     }); 
-	
-	// Add home marker if requested
-	if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined')) {
-	    var siteMarker  = new google.maps.LatLng(SiteLat, SiteLon);
-	    var markerImage = new google.maps.MarkerImage(
-	        'http://maps.google.com/mapfiles/kml/pal4/icon57.png',
-            new google.maps.Size(32, 32),   // Image size
-            new google.maps.Point(0, 0),    // Origin point of image
-            new google.maps.Point(16, 16)); // Position where marker should point 
-	    var marker = new google.maps.Marker({
-          position: siteMarker,
-          map: GoogleMap,
-          icon: markerImage,
-          title: 'My Radar Site',
-          zIndex: -99999
-        });
-        
-        if (SiteCircles) {
-            for (var i=0;i<SiteCirclesDistances.length;i++) {
-              drawCircle(marker, SiteCirclesDistances[i]); // in meters
-            }
-        }
-	}
+
 	
 	// These will run after page is complitely loaded
 	$(window).load(function() {
-        $('#dialog-modal').css('display', 'inline'); // Show hidden settings-windows content
-    });
+		$('#dialog-modal').css('display', 'inline'); // Show hidden settings-windows content
+	});
+
+	fetchJSONConfig();
 
 	// Load up our options page
 	optionsInitalize();

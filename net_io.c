@@ -686,6 +686,8 @@ char *aircraftsToJson(int *len) {
 //
 //=========================================================================
 //
+#define HTTP_OK "200 OK"
+#define HTTP_NOTFOUND "404 Not Found"
 #define MODES_CONTENT_TYPE_HTML "text/html;charset=utf-8"
 #define MODES_CONTENT_TYPE_CSS  "text/css;charset=utf-8"
 #define MODES_CONTENT_TYPE_JSON "application/json;charset=utf-8"
@@ -701,6 +703,7 @@ char *aircraftsToJson(int *len) {
 int handleHTTPRequest(struct client *c, char *p) {
     char hdr[512];
     int clen, hdrlen;
+    char *httpcode = HTTP_OK;
     int httpver, keepalive;
     char *url, *content;
     char ctype[48];
@@ -742,9 +745,21 @@ int handleHTTPRequest(struct client *c, char *p) {
     // Select the content to send, we have just two so far:
     // "/" -> Our google map application.
     // "/data.json" -> Our ajax request to update planes.
+    // "/config.json" -> Our ajax request to configure the webui.
     if (strstr(url, "/data.json")) {
         content = aircraftsToJson(&clen);
         //snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JSON);
+    } else if (strstr(url, "/config.json")) {
+        if (Modes.fUserLat != 0.0 && Modes.fUserLon != 0.0) {
+            char buf[128];
+            clen = snprinft(buf, sizeof(buf),
+                "{\"SiteLat\": %f, \"SiteLon\": %f}",
+                Modes.fUserLat, Modes.fUserLon);
+            content = strdup(buf);
+        } else {
+            content = strdup("{}");
+            clen = strlen(content);
+        }
     } else {
         struct stat sbuf;
         int fd = -1;
@@ -752,13 +767,17 @@ int handleHTTPRequest(struct client *c, char *p) {
         if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY)) != -1) {
             content = (char *) malloc(sbuf.st_size);
             if (read(fd, content, sbuf.st_size) == -1) {
-                snprintf(content, sbuf.st_size, "Error reading from file: %s", strerror(errno));
+                snprintf(content, sbuf.st_size, "Error reading from %s: %s",
+                    getFile, strerror(errno));
+            httpcode = HTTP_NOTFOUND;
             }
             clen = sbuf.st_size;
         } else {
             char buf[128];
-            clen = snprintf(buf,sizeof(buf),"Error opening HTML file: %s", strerror(errno));
+            clen = snprintf(buf, sizeof(buf), "Error opening %s: %s",
+                getFile, strerror(errno));
             content = strdup(buf);
+            httpcode = HTTP_NOTFOUND;
         }
         
         if (fd != -1) {
@@ -782,7 +801,7 @@ int handleHTTPRequest(struct client *c, char *p) {
 
     // Create the header and send the reply
     hdrlen = snprintf(hdr, sizeof(hdr),
-        "HTTP/1.1 200 OK\r\n"
+        "HTTP/1.1 %s\r\n"
         "Server: Dump1090\r\n"
         "Content-Type: %s\r\n"
         "Connection: %s\r\n"
@@ -790,6 +809,7 @@ int handleHTTPRequest(struct client *c, char *p) {
         "Cache-Control: no-cache, must-revalidate\r\n"
         "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
         "\r\n",
+        httpstatus,
         ctype,
         keepalive ? "keep-alive" : "close",
         clen);
@@ -800,15 +820,23 @@ int handleHTTPRequest(struct client *c, char *p) {
 
     // Send header and content.
 #ifndef _WIN32
-    if ( (write(c->fd, hdr, hdrlen) != hdrlen) 
-      || (write(c->fd, content, clen) != clen) ) {
-#else
-    if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen) 
-      || (send(c->fd, content, clen, 0) != clen) ) {
-#endif
+    if (anetWrite(c->fd, hdr, hdrlen) != hdrlen) {
+        perror("HTTP short write of reply header");
         free(content);
         return 1;
     }
+    if (anetWrite(c->fd, content, clen) != clen) {
+        perror("HTTP short write of content");
+        free(content);
+        return 1;
+    }
+#else
+    if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen) 
+      || (send(c->fd, content, clen, 0) != clen) ) {
+        free(content);
+        return 1;
+    }
+#endif
     free(content);
     Modes.stat_http_requests++;
     return !keepalive;

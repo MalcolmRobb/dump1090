@@ -228,7 +228,9 @@ int anetWrite(int fd, char *buf, int count)
     while(totlen != count) {
         nwritten = write(fd,buf,count-totlen);
         if (nwritten == 0) return totlen;
-        if (nwritten == -1) return -1;
+        if (nwritten == -1 && errno != EAGAIN) {
+            return -1;
+        }
         totlen += nwritten;
         buf += nwritten;
     }

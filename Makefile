@@ -5,15 +5,20 @@
 PROGNAME=dump1090
 
 ifdef PREFIX
-BINDIR=$(PREFIX)/bin
-SHAREDIR=$(PREFIX)/share/$(PROGNAME)
-EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
+	BINDIR=$(PREFIX)/bin
+	SBINDIR=$(PREFIX)/sbin
+	SHAREDIR=$(PREFIX)/share/$(PROGNAME)
+	EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
+else
+	BINDIR=$(DESTDIR)/usr/bin
+	SBINDIR=$(DESTDIR)/usr/sbin
+	SHAREDIR=$(DESTDIR)/usr/share/$(PROGNAME)
+	EXTRACFLAGS+=-DHTMLPATH=\"$(SHAREDIR)/public_html\"
 endif
 
-CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
+CFLAGS+=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
 LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 CC=gcc
-
 
 all: dump1090 view1090
 
@@ -28,3 +33,4 @@ view1090: view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
 
 clean:
 	rm -f *.o dump1090 view1090
+
