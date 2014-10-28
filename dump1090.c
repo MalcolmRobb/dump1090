@@ -573,6 +573,7 @@ void backgroundTasks(void) {
 
     if (Modes.net) {
         modesReadFromClients();
+        modesNetCleanup();
     }    
 
     // If Modes.aircrafts is not NULL, remove any stale aircraft

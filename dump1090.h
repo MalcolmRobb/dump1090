@@ -457,6 +457,7 @@ void modesReadFromClients (void);
 void modesSendAllClients  (int service, void *msg, int len);
 void modesQueueOutput     (struct modesMessage *mm);
 void modesReadFromClient(struct client *c, char *sep, int(*handler)(struct client *, char *));
+void modesNetCleanup      (void);
 
 #ifdef __cplusplus
 }

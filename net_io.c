@@ -145,23 +145,11 @@ struct client * modesAcceptClients(void) {
 // On error free the client, collect the structure, adjust maxfd if needed.
 //
 void modesFreeClient(struct client *c) {
+    // Clean up, but defer removing from the list until modesNetCleanup().
+    // This is because there may be stackframes still pointing at this
+    // client (unpredictably: reading from client A may cause client B to
+    // be freed)
 
-    // Unhook this client from the linked list of clients
-    struct client *p = Modes.clients;
-    if (p) {
-        if (p == c) {
-            Modes.clients = c->next;
-        } else {
-            while ((p) && (p->next != c)) {
-                p = p->next;
-            }
-            if (p) {
-                p->next = c->next;
-            }
-        }
-    }
-
-    // It's now safe to remove this client
     close(c->fd);
     if (c->service == Modes.sbsos) {
         if (Modes.stat_sbs_connections) Modes.stat_sbs_connections--;
@@ -174,7 +162,9 @@ void modesFreeClient(struct client *c) {
     if (Modes.debug & MODES_DEBUG_NET)
         printf("Closing client %d\n", c->fd);
 
-    free(c);
+    // mark it as inactive and ready to be freed
+    c->fd = -1;
+    c->service = -1;
 }
 //
 //=========================================================================
@@ -182,12 +172,9 @@ void modesFreeClient(struct client *c) {
 // Send the specified message to all clients listening for a given service
 //
 void modesSendAllClients(int service, void *msg, int len) {
-    struct client *c = Modes.clients;
+    struct client *c;
 
-    while (c) {
-        // Read next before servicing client incase the service routine deletes the client! 
-        struct client *next = c->next;
-
+    for (c = Modes.clients; c; c = c->next) {
         if (c->service == service) {
 #ifndef _WIN32
             int nwritten = write(c->fd, msg, len);
@@ -198,7 +185,6 @@ void modesSendAllClients(int service, void *msg, int len) {
                 modesFreeClient(c);
             }
         }
-        c = next;
     }
 }
 //
@@ -952,10 +938,7 @@ void modesReadFromClients(void) {
 
     struct client *c = modesAcceptClients();
 
-    while (c) {
-        // Read next before servicing client incase the service routine deletes the client! 
-        struct client *next = c->next;
-
+    for (; c; c = c->next) {
         if (c->service == Modes.ris) {
             modesReadFromClient(c,"\n",decodeHexMessage);
         } else if (c->service == Modes.bis) {
@@ -963,9 +946,26 @@ void modesReadFromClients(void) {
         } else if (c->service == Modes.https) {
             modesReadFromClient(c,"\r\n\r\n",handleHTTPRequest);
         }
-        c = next;
     }
 }
+
+//
+// Perform cleanup of any recently-closed clients.
+//
+void modesNetCleanup(void) {
+    struct client *c, **prev;
+
+    for (prev = &Modes.clients, c = *prev; c; c = *prev) {
+         if (c->fd == -1) {
+             // Recently closed, prune from list
+             *prev = c->next;
+             free(c);
+         } else {
+             prev = &c->next;
+         }
+     }
+ }
+
 //
 // =============================== Network IO ===========================
 //
