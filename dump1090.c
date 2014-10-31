@@ -70,7 +70,7 @@ void modesInitConfig(void) {
     Modes.freq                    = MODES_DEFAULT_FREQ;
     Modes.ppm_error               = MODES_DEFAULT_PPM;
     Modes.check_crc               = 1;
-    Modes.net_heartbeat_rate      = MODES_NET_HEARTBEAT_RATE;
+    Modes.net_heartbeat_interval  = MODES_NET_HEARTBEAT_INTERVAL;
     Modes.net_output_sbs_port     = MODES_NET_OUTPUT_SBS_PORT;
     Modes.net_output_raw_port     = MODES_NET_OUTPUT_RAW_PORT;
     Modes.net_input_raw_port      = MODES_NET_INPUT_RAW_PORT;
@@ -97,9 +97,7 @@ void modesInit(void) {
     if ( ((Modes.icao_cache = (uint32_t *) malloc(sizeof(uint32_t) * MODES_ICAO_CACHE_LEN * 2)                  ) == NULL) ||
          ((Modes.pFileData  = (uint16_t *) malloc(MODES_ASYNC_BUF_SIZE)                                         ) == NULL) ||
          ((Modes.magnitude  = (uint16_t *) malloc(MODES_ASYNC_BUF_SIZE+MODES_PREAMBLE_SIZE+MODES_LONG_MSG_SIZE) ) == NULL) ||
-         ((Modes.maglut     = (uint16_t *) malloc(sizeof(uint16_t) * 256 * 256)                                 ) == NULL) ||
-         ((Modes.beastOut   = (char     *) malloc(MODES_RAWOUT_BUF_SIZE)                                        ) == NULL) ||
-         ((Modes.rawOut     = (char     *) malloc(MODES_RAWOUT_BUF_SIZE)                                        ) == NULL) ) 
+         ((Modes.maglut     = (uint16_t *) malloc(sizeof(uint16_t) * 256 * 256)                                 ) == NULL) )
     {
         fprintf(stderr, "Out of memory allocating data buffer.\n");
         exit(1);
@@ -130,10 +128,10 @@ void modesInit(void) {
     }
 
     // Limit the maximum requested raw output size to less than one Ethernet Block 
-    if (Modes.net_output_raw_size > (MODES_RAWOUT_BUF_FLUSH))
-      {Modes.net_output_raw_size = MODES_RAWOUT_BUF_FLUSH;}
-    if (Modes.net_output_raw_rate > (MODES_RAWOUT_BUF_RATE))
-      {Modes.net_output_raw_rate = MODES_RAWOUT_BUF_RATE;}
+    if (Modes.net_output_flush_size > (MODES_OUT_FLUSH_SIZE))
+      {Modes.net_output_flush_size = MODES_OUT_FLUSH_SIZE;}
+    if (Modes.net_output_flush_interval > (MODES_OUT_FLUSH_INTERVAL))
+      {Modes.net_output_flush_interval = MODES_OUT_FLUSH_INTERVAL;}
     if (Modes.net_sndbuf_size > (MODES_NET_SNDBUF_MAX))
       {Modes.net_sndbuf_size = MODES_NET_SNDBUF_MAX;}
 
@@ -407,7 +405,6 @@ void showHelp(void) {
 "--raw                    Show only messages hex values\n"
 "--net                    Enable networking\n"
 "--modeac                 Enable decoding of SSR Modes 3/A & 3/C\n"
-"--net-beast              TCP raw output in Beast binary format\n"
 "--net-only               Enable just networking, no RTL device or file used\n"
 "--net-bind-address <ip>  IP address to bind to (default: Any; Use 127.0.0.1 for private)\n"
 "--net-http-port <port>   HTTP server port (default: 8080)\n"
@@ -416,8 +413,8 @@ void showHelp(void) {
 "--net-sbs-port <port>    TCP BaseStation output listen port (default: 30003)\n"
 "--net-bi-port <port>     TCP Beast input listen port  (default: 30004)\n"
 "--net-bo-port <port>     TCP Beast output listen port (default: 30005)\n"
-"--net-ro-size <size>     TCP raw output minimum size (default: 0)\n"
-"--net-ro-rate <rate>     TCP raw output memory flush rate (default: 0)\n"
+"--net-ro-size <size>     TCP output minimum size (default: 0)\n"
+"--net-ro-interval <rate> TCP output memory flush rate in seconds (default: 0)\n"
 "--net-heartbeat <rate>   TCP heartbeat rate in seconds (default: 60 sec; 0 to disable)\n"
 "--net-buffer <n>         TCP buffer size 64Kb * (2^n) (default: n=0, 64Kb)\n"
 "--lat <latitude>         Reference/receiver latitude for surface posn (opt)\n"
@@ -573,7 +570,7 @@ void backgroundTasks(void) {
     static time_t next_stats;
 
     if (Modes.net) {
-        modesReadFromClients();
+	modesNetPeriodicWork();
     }    
 
     // If Modes.aircrafts is not NULL, remove any stale aircraft
@@ -701,11 +698,13 @@ int main(int argc, char **argv) {
             Modes.net = 1;
             Modes.net_only = 1;
        } else if (!strcmp(argv[j],"--net-heartbeat") && more) {
-            Modes.net_heartbeat_rate = atoi(argv[++j]) * 15;
+            Modes.net_heartbeat_interval = atoi(argv[++j]);
        } else if (!strcmp(argv[j],"--net-ro-size") && more) {
-            Modes.net_output_raw_size = atoi(argv[++j]);
+            Modes.net_output_flush_size = atoi(argv[++j]);
         } else if (!strcmp(argv[j],"--net-ro-rate") && more) {
-            Modes.net_output_raw_rate = atoi(argv[++j]);
+            Modes.net_output_flush_interval = atoi(argv[++j]) / 15; // backwards compatibility
+        } else if (!strcmp(argv[j],"--net-ro-interval") && more) {
+            Modes.net_output_flush_interval = atoi(argv[++j]);
         } else if (!strcmp(argv[j],"--net-ro-port") && more) {
             if (Modes.beast) // Required for legacy backward compatibility
                 {Modes.net_output_beast_port = atoi(argv[++j]);;}

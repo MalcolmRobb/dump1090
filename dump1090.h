@@ -116,9 +116,9 @@
 #define MODES_LONG_MSG_SIZE     (MODES_LONG_MSG_SAMPLES  * sizeof(uint16_t))
 #define MODES_SHORT_MSG_SIZE    (MODES_SHORT_MSG_SAMPLES * sizeof(uint16_t))
 
-#define MODES_RAWOUT_BUF_SIZE   (1500)
-#define MODES_RAWOUT_BUF_FLUSH  (MODES_RAWOUT_BUF_SIZE - 200)
-#define MODES_RAWOUT_BUF_RATE   (1000)            // 1000 * 64mS = 1 Min approx
+#define MODES_OUT_BUF_SIZE         (1500)
+#define MODES_OUT_FLUSH_SIZE       (MODES_OUT_BUF_SIZE - 256)
+#define MODES_OUT_FLUSH_INTERVAL   (60)
 
 #define MODES_ICAO_CACHE_LEN 1024 // Power of two required
 #define MODES_ICAO_CACHE_TTL 60   // Time to live of cached addresses
@@ -165,7 +165,7 @@
 #define MODES_INTERACTIVE_DELETE_TTL   300      // Delete from the list after 300 seconds
 #define MODES_INTERACTIVE_DISPLAY_TTL   60      // Delete from display after 60 seconds
 
-#define MODES_NET_HEARTBEAT_RATE       900      // Each block is approx 65mS - default is > 1 min
+#define MODES_NET_HEARTBEAT_INTERVAL    60      // seconds
 
 #define MODES_NET_SERVICES_NUM          6
 #define MODES_NET_INPUT_RAW_PORT    30001
@@ -237,6 +237,15 @@ struct stDF {
     unsigned char    msg[MODES_LONG_MSG_BYTES];  // the binary
 } tDF;
 
+// Common writer state for all output sockets of one type
+struct net_writer {
+    int socket;          // listening socket FD, used to identify the owning service
+    int connections;     // number of active clients
+    void *data;          // shared write buffer, sized MODES_OUT_BUF_SIZE
+    int dataUsed;        // number of bytes of write buffer currently used
+    time_t lastWrite;    // time of last write to clients
+};
+
 // Program global state
 struct {                             // Internal state
     pthread_t       reader_thread;
@@ -270,16 +279,14 @@ struct {                             // Internal state
     // Networking
     char           aneterr[ANET_ERR_LEN];
     struct client *clients;          // Our clients
-    int            sbsos;            // SBS output listening socket
-    int            ros;              // Raw output listening socket
     int            ris;              // Raw input listening socket
-    int            bos;              // Beast output listening socket
     int            bis;              // Beast input listening socket
     int            https;            // HTTP listening socket
-    char          *rawOut;           // Buffer for building raw output data
-    int            rawOutUsed;       // How much of the buffer is currently used
-    char          *beastOut;         // Buffer for building beast output data
-    int            beastOutUsed;     // How much if the buffer is currently used
+
+    struct net_writer raw_out;       // Raw output
+    struct net_writer beast_out;     // Beast-format output
+    struct net_writer sbs_out;       // SBS-format output
+
 #ifdef _WIN32
     WSADATA        wsaData;          // Windows socket initialisation
 #endif
@@ -295,12 +302,10 @@ struct {                             // Internal state
     int   debug;                     // Debugging mode
     int   net;                       // Enable networking
     int   net_only;                  // Enable just networking
-    int   net_heartbeat_count;       // TCP heartbeat counter
-    int   net_heartbeat_rate;        // TCP heartbeat rate
+    int   net_heartbeat_interval;    // TCP heartbeat interval (seconds)
     int   net_output_sbs_port;       // SBS output TCP port
-    int   net_output_raw_size;       // Minimum Size of the output raw data
-    int   net_output_raw_rate;       // Rate (in 64mS increments) of output raw data
-    int   net_output_raw_rate_count; // Rate (in 64mS increments) of output raw data
+    int   net_output_flush_size;     // Minimum Size of output data
+    int   net_output_flush_interval; // Maximum interval (in seconds) between outputwrites
     int   net_output_raw_port;       // Raw output TCP port
     int   net_input_raw_port;        // Raw input TCP port
     int   net_output_beast_port;     // Beast output TCP port
@@ -349,9 +354,6 @@ struct {                             // Internal state
     unsigned int stat_bit_fix[MODES_MAX_BITERRORS];
 
     unsigned int stat_http_requests;
-    unsigned int stat_sbs_connections;
-    unsigned int stat_raw_connections;
-    unsigned int stat_beast_connections;
     unsigned int stat_out_of_phase;
     unsigned int stat_ph_demodulated0;
     unsigned int stat_ph_demodulated1;
@@ -454,10 +456,9 @@ struct stDF     *interactiveFindDF      (uint32_t addr);
 // Functions exported from net_io.c
 //
 void modesInitNet         (void);
-void modesReadFromClients (void);
-void modesSendAllClients  (int service, void *msg, int len);
 void modesQueueOutput     (struct modesMessage *mm);
 void modesReadFromClient(struct client *c, char *sep, int(*handler)(struct client *, char *));
+void modesNetPeriodicWork (void);
 
 #ifdef __cplusplus
 }
