@@ -10,6 +10,9 @@ SHAREDIR=$(PREFIX)/share/$(PROGNAME)
 EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
 endif
 
+INSTALL = /usr/bin/install -c
+INSTALL_PROGRAM = ${INSTALL}
+
 CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
 LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 CC=gcc
@@ -28,3 +31,13 @@ view1090: view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
 
 clean:
 	rm -f *.o dump1090 view1090
+
+install: all
+	$(INSTALL_PROGRAM) -D dump1090 $(BINDIR)/dump1090
+	$(INSTALL_PROGRAM) -D view1090 $(BINDIR)/view1090
+	$(INSTALL_PROGRAM) -D init/dump1090 /etc/init.d/dump1090
+
+uninstall:
+	rm -fr $(BINDIR)/dump1090
+	rm -fr $(BINDIR)/view1090
+	rm -fr /etc/init.d/dump1090	
