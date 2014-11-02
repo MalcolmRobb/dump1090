@@ -1572,6 +1572,7 @@ void detectModeS(uint16_t *m, uint32_t mlen) {
         uint16_t *pPreamble, *pPayload, *pPtr;
         uint8_t  theByte, theErrs;
         int msglen, scanlen, sigStrength;
+        int valid_preamble;
 
         pPreamble = &m[j];
         pPayload  = &m[j+MODES_PREAMBLE_SAMPLES];
@@ -1586,25 +1587,7 @@ void detectModeS(uint16_t *m, uint32_t mlen) {
         if (!use_correction)  // This is not a re-try with phase correction
             {                 // so try to find a new preamble
 
-            if (Modes.mode_ac) 
-                {
-                int ModeA = detectModeA(pPreamble, &mm);
-
-                if (ModeA) // We have found a valid ModeA/C in the data                    
-                    {
-                    mm.timestampMsg = Modes.timestampBlk + ((j+1) * 6);
-
-                    // Decode the received message
-                    decodeModeAMessage(&mm, ModeA);
-
-                    // Pass data to the next layer
-                    useModesMessage(&mm);
-
-                    j += MODEAC_MSG_SAMPLES;
-                    Modes.stat_ModeAC++;
-                    continue;
-                    }
-                }
+            valid_preamble = 1;
 
             // First check of relations between the first 10 samples
             // representing a valid preamble. We don't even investigate further
@@ -1623,37 +1606,68 @@ void detectModeS(uint16_t *m, uint32_t mlen) {
                 if (Modes.debug & MODES_DEBUG_NOPREAMBLE &&
                     *pPreamble  > MODES_DEBUG_NOPREAMBLE_LEVEL)
                     dumpRawMessage("Unexpected ratio among first 10 samples", msg, m, j);
-                continue;
+                // continue;
+                valid_preamble = 0;
             }
 
-            // The samples between the two spikes must be < than the average
-            // of the high spikes level. We don't test bits too near to
-            // the high levels as signals can be out of phase so part of the
-            // energy can be in the near samples
-            high = (pPreamble[0] + pPreamble[2] + pPreamble[7] + pPreamble[9]) / 6;
-            if (pPreamble[4] >= high ||
-                pPreamble[5] >= high)
-            {
-                if (Modes.debug & MODES_DEBUG_NOPREAMBLE &&
-                    *pPreamble  > MODES_DEBUG_NOPREAMBLE_LEVEL)
-                    dumpRawMessage("Too high level in samples between 3 and 6", msg, m, j);
-                continue;
-            }
+           if (valid_preamble) {
+                // The samples between the two spikes must be < than the average
+                // of the high spikes level. We don't test bits too near to
+                // the high levels as signals can be out of phase so part of the
+                // energy can be in the near samples
+                high = (pPreamble[0] + pPreamble[2] + pPreamble[7] + pPreamble[9]) / 6;
+                if (pPreamble[4] >= high ||
+                    pPreamble[5] >= high)
+                {
+                    if (Modes.debug & MODES_DEBUG_NOPREAMBLE &&
+                        *pPreamble  > MODES_DEBUG_NOPREAMBLE_LEVEL)
+                        dumpRawMessage("Too high level in samples between 3 and 6", msg, m, j);
+                    // continue;
+                    valid_preamble=0;
+                }
+           }
 
-            // Similarly samples in the range 11-14 must be low, as it is the
-            // space between the preamble and real data. Again we don't test
-            // bits too near to high levels, see above
-            if (pPreamble[11] >= high ||
-                pPreamble[12] >= high ||
-                pPreamble[13] >= high ||
-                pPreamble[14] >= high)
-            {
-                if (Modes.debug & MODES_DEBUG_NOPREAMBLE &&
-                    *pPreamble  > MODES_DEBUG_NOPREAMBLE_LEVEL)
-                    dumpRawMessage("Too high level in samples between 10 and 15", msg, m, j);
+           if (valid_preamble) {
+                // Similarly samples in the range 11-14 must be low, as it is the
+                // space between the preamble and real data. Again we don't test
+                // bits too near to high levels, see above
+                if (pPreamble[11] >= high ||
+                    pPreamble[12] >= high ||
+                    pPreamble[13] >= high ||
+                    pPreamble[14] >= high)
+                {
+                    if (Modes.debug & MODES_DEBUG_NOPREAMBLE &&
+                        *pPreamble  > MODES_DEBUG_NOPREAMBLE_LEVEL)
+                        dumpRawMessage("Too high level in samples between 10 and 15", msg, m, j);
+                    // continue;
+                    valid_preamble = 0;
+                }
+           }
+
+           if (valid_preamble) {
+                Modes.stat_valid_preamble++;
+            } else {
+                if (Modes.mode_ac)
+                    {
+                    int ModeA = detectModeA(pPreamble, &mm);
+
+                    if (ModeA) // We have found a valid ModeA/C in the data
+                        {
+                        mm.timestampMsg = Modes.timestampBlk + ((j+1) * 6);
+
+                        // Decode the received message
+                        decodeModeAMessage(&mm, ModeA);
+
+                        // Pass data to the next layer
+                        useModesMessage(&mm);
+
+                        j += MODEAC_MSG_SAMPLES;
+                        Modes.stat_ModeAC++;
+                        continue;
+                        }
+                    }
                 continue;
             }
-            Modes.stat_valid_preamble++;
         } 
 
         else {
