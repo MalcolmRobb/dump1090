@@ -85,7 +85,7 @@ void modesInitNet(void) {
     for (j = 0; j < MODES_NET_SERVICES_NUM; j++) {
 		services[j].enabled = (services[j].port != 0);
 		if (services[j].enabled) {
-			int s = anetTcpServer(Modes.aneterr, services[j].port, NULL);
+			int s = anetTcpServer(Modes.aneterr, services[j].port, Modes.net_bind_address);
 			if (s == -1) {
 				fprintf(stderr, "Error opening the listening port %d (%s): %s\n",
 					services[j].port, services[j].descr, Modes.aneterr);
@@ -161,8 +161,15 @@ void modesFreeClient(struct client *c) {
         }
     }
 
-    // It's now safe to remove this client
-    close(c->fd);
+    free(c);
+}
+//
+//=========================================================================
+//
+// Close the client connection and mark it as closed
+//
+void modesCloseClient(struct client *c) {
+	close(c->fd);
     if (c->service == Modes.sbsos) {
         if (Modes.stat_sbs_connections) Modes.stat_sbs_connections--;
     } else if (c->service == Modes.ros) {
@@ -174,7 +181,7 @@ void modesFreeClient(struct client *c) {
     if (Modes.debug & MODES_DEBUG_NET)
         printf("Closing client %d\n", c->fd);
 
-    free(c);
+    c->fd = -1;
 }
 //
 //=========================================================================
@@ -188,15 +195,19 @@ void modesSendAllClients(int service, void *msg, int len) {
         // Read next before servicing client incase the service routine deletes the client! 
         struct client *next = c->next;
 
-        if (c->service == service) {
+        if (c->fd != -1) {
+            if (c->service == service) {
 #ifndef _WIN32
-            int nwritten = write(c->fd, msg, len);
+                int nwritten = write(c->fd, msg, len);
 #else
-            int nwritten = send(c->fd, msg, len, 0 );
+                int nwritten = send(c->fd, msg, len, 0 );
 #endif
-            if (nwritten != len) {
-                modesFreeClient(c);
+                if (nwritten != len) {
+                    modesCloseClient(c);
+                }
             }
+        } else {
+            modesFreeClient(c);
         }
         c = next;
     }
@@ -686,8 +697,11 @@ char *aircraftsToJson(int *len) {
 //
 //=========================================================================
 //
+
+// RFC2616 defines the status line as "Version Code Reason"
 #define HTTP_OK "200 OK"
 #define HTTP_NOTFOUND "404 Not Found"
+#define HTTP_SERVERERROR "500 Server Error"
 #define MODES_CONTENT_TYPE_HTML "text/html;charset=utf-8"
 #define MODES_CONTENT_TYPE_CSS  "text/css;charset=utf-8"
 #define MODES_CONTENT_TYPE_JSON "application/json;charset=utf-8"
@@ -717,11 +731,12 @@ int handleHTTPRequest(struct client *c, char *p) {
     httpver = (strstr(p, "HTTP/1.1") != NULL) ? 11 : 10;
     if (httpver == 10) {
         // HTTP 1.0 defaults to close, unless otherwise specified.
-        keepalive = strstr(p, "Connection: keep-alive") != NULL;
+        //keepalive = strstr(p, "Connection: keep-alive") != NULL;
     } else if (httpver == 11) {
         // HTTP 1.1 defaults to keep-alive, unless close is specified.
-        keepalive = strstr(p, "Connection: close") == NULL;
+        //keepalive = strstr(p, "Connection: close") == NULL;
     }
+    keepalive = 0;
 
     // Identify he URL.
     p = strchr(p,' ');
@@ -752,7 +767,7 @@ int handleHTTPRequest(struct client *c, char *p) {
     } else if (strstr(url, "/config.json")) {
         if (Modes.fUserLat != 0.0 && Modes.fUserLon != 0.0) {
             char buf[128];
-            clen = snprinft(buf, sizeof(buf),
+            clen = snprintf(buf, sizeof(buf),
                 "{\"SiteLat\": %f, \"SiteLon\": %f}",
                 Modes.fUserLat, Modes.fUserLon);
             content = strdup(buf);
@@ -761,23 +776,39 @@ int handleHTTPRequest(struct client *c, char *p) {
             clen = strlen(content);
         }
     } else {
+#ifndef DEBIAN
         struct stat sbuf;
         int fd = -1;
+        char *rp, *hrp;
+        char buf[128];
 
-        if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY)) != -1) {
-            content = (char *) malloc(sbuf.st_size);
-            if (read(fd, content, sbuf.st_size) == -1) {
-                snprintf(content, sbuf.st_size, "Error reading from %s: %s",
+        rp = realpath(getFile, NULL);
+        hrp = realpath(HTMLPATH, NULL);
+        hrp = (hrp ? hrp : HTMLPATH);
+
+        content = strdup("Not found.");
+        clen = strlen(content);
+        httpcode = HTTP_NOTFOUND;
+
+        if (rp && (!strncmp(hrp, rp, strlen(hrp)))) {
+            if (stat(getFile, &sbuf) != -1 &&
+                (fd = open(getFile, O_RDONLY)) != -1) {
+                content = (char *) realloc(content, sbuf.st_size);
+
+                if (read(fd, content, sbuf.st_size) != -1) {
+                    clen = sbuf.st_size;
+                    httpcode = HTTP_OK;
+                } else {
+                    clen = snprintf(buf, sizeof(buf), "Error reading %s: %s",
+                        getFile, strerror(errno));
+                    httpcode = HTTP_SERVERERROR;
+                }
+            } else {
+                httpcode = HTTP_NOTFOUND;
+                clen = snprintf(buf, sizeof(buf), "Error opening %s: %s",
                     getFile, strerror(errno));
-            httpcode = HTTP_NOTFOUND;
+                content = strdup(buf);
             }
-            clen = sbuf.st_size;
-        } else {
-            char buf[128];
-            clen = snprintf(buf, sizeof(buf), "Error opening %s: %s",
-                getFile, strerror(errno));
-            content = strdup(buf);
-            httpcode = HTTP_NOTFOUND;
         }
         
         if (fd != -1) {
@@ -798,6 +829,19 @@ int handleHTTPRequest(struct client *c, char *p) {
             snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JS);
         }
     }
+#endif
+
+#ifdef DEBIAN
+        /* Disable local filesystem access in the Debian build.  The package
+         * will use apache2 and a reverse proxy to serve HTTP due to the 
+         * complexity of maintaining a secure HTTP implementation.
+         */
+        httpcode = HTTP_NOTFOUND;
+        content = strdup("File not found.");
+        clen = strlen(content);
+        snprintf(ctype, sizeof(ctype), MODES_CONTENT_TYPE_HTML));
+    }
+#endif
 
     // Create the header and send the reply
     hdrlen = snprintf(hdr, sizeof(hdr),
@@ -809,7 +853,7 @@ int handleHTTPRequest(struct client *c, char *p) {
         "Cache-Control: no-cache, must-revalidate\r\n"
         "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
         "\r\n",
-        httpstatus,
+        httpcode,
         ctype,
         keepalive ? "keep-alive" : "close",
         clen);
@@ -880,6 +924,10 @@ void modesReadFromClient(struct client *c, char *sep,
         nread = recv(c->fd, c->buf+c->buflen, left, 0);
         if (nread < 0) {errno = WSAGetLastError();}
 #endif
+        if (nread == 0) {
+			modesCloseClient(c);
+			return;
+		}
 
         // If we didn't get all the data we asked for, then return once we've processed what we did get.
         if (nread != left) {
@@ -890,7 +938,7 @@ void modesReadFromClient(struct client *c, char *sep,
 #else
         if ( (nread < 0) && (errno != EWOULDBLOCK)) { // Error, or end of file
 #endif
-            modesFreeClient(c);
+            modesCloseClient(c);
             return;
         }
         if (nread <= 0) {
@@ -938,7 +986,7 @@ void modesReadFromClient(struct client *c, char *sep,
                 }
                 // Have a 0x1a followed by 1, 2 or 3 - pass message less 0x1a to handler.
                 if (handler(c, s)) {
-                    modesFreeClient(c);
+                    modesCloseClient(c);
                     return;
                 }
                 fullmsg = 1;
@@ -954,7 +1002,7 @@ void modesReadFromClient(struct client *c, char *sep,
             while ((e = strstr(s, sep)) != NULL) { // end of first message if found
                 *e = '\0';                         // The handler expects null terminated strings
                 if (handler(c, s)) {               // Pass message to handler.
-                    modesFreeClient(c);            // Handler returns 1 on error to signal we .
+                    modesCloseClient(c);           // Handler returns 1 on error to signal we .
                     return;                        // should close the client connection
                 }
                 s = e + strlen(sep);               // Move to start of next message
@@ -981,15 +1029,19 @@ void modesReadFromClients(void) {
     struct client *c = modesAcceptClients();
 
     while (c) {
-        // Read next before servicing client incase the service routine deletes the client! 
-        struct client *next = c->next;
+            // Read next before servicing client incase the service routine deletes the client! 
+            struct client *next = c->next;
 
-        if (c->service == Modes.ris) {
-            modesReadFromClient(c,"\n",decodeHexMessage);
-        } else if (c->service == Modes.bis) {
-            modesReadFromClient(c,"",decodeBinMessage);
-        } else if (c->service == Modes.https) {
-            modesReadFromClient(c,"\r\n\r\n",handleHTTPRequest);
+        if (c->fd >= 0) {
+            if (c->service == Modes.ris) {
+                modesReadFromClient(c,"\n",decodeHexMessage);
+            } else if (c->service == Modes.bis) {
+                modesReadFromClient(c,"",decodeBinMessage);
+            } else if (c->service == Modes.https) {
+                modesReadFromClient(c,"\r\n\r\n",handleHTTPRequest);
+            }
+        } else {
+            modesFreeClient(c);
         }
         c = next;
     }

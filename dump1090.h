@@ -37,7 +37,7 @@
 // MinorVer changes when additional features are added, but not for bug fixes (range 00-99)
 // DayDate & Year changes for all changes, including for bug fixes. It represent the release date of the update
 //
-#define MODES_DUMP1090_VERSION     "1.09.0608.14"
+#define MODES_DUMP1090_VERSION     "1.10.3010.14"
 
 // ============================= Include files ==========================
 
@@ -305,6 +305,7 @@ struct {                             // Internal state
     int   net_input_raw_port;        // Raw input TCP port
     int   net_output_beast_port;     // Beast output TCP port
     int   net_input_beast_port;      // Beast input TCP port
+    char  *net_bind_address;         // Bind address
     int   net_http_port;             // HTTP port
     int   net_sndbuf_size;           // TCP output buffer size (64Kb * 2^n)
     int   quiet;                     // Suppress stdout
