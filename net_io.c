@@ -815,6 +815,18 @@ int handleHTTPRequest(struct client *c, char *p) {
             close(fd);
         }
     }
+#endif
+
+#ifdef DEBIAN
+        /* Disable local filesystem access in the Debian build.  The package
+         * will use apache2 and a reverse proxy to serve HTTP due to the 
+         * complexity of maintaining a secure HTTP implementation.
+         */
+        httpcode = HTTP_NOTFOUND;
+        content = strdup("File not found.");
+        clen = strlen(content);
+    }
+#endif
 
     // Get file extension and content type
     snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_HTML); // Default content type
@@ -829,19 +841,6 @@ int handleHTTPRequest(struct client *c, char *p) {
             snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JS);
         }
     }
-#endif
-
-#ifdef DEBIAN
-        /* Disable local filesystem access in the Debian build.  The package
-         * will use apache2 and a reverse proxy to serve HTTP due to the 
-         * complexity of maintaining a secure HTTP implementation.
-         */
-        httpcode = HTTP_NOTFOUND;
-        content = strdup("File not found.");
-        clen = strlen(content);
-        snprintf(ctype, sizeof(ctype), MODES_CONTENT_TYPE_HTML);
-    }
-#endif
 
     // Create the header and send the reply
     hdrlen = snprintf(hdr, sizeof(hdr),
