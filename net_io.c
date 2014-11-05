@@ -839,7 +839,7 @@ int handleHTTPRequest(struct client *c, char *p) {
         httpcode = HTTP_NOTFOUND;
         content = strdup("File not found.");
         clen = strlen(content);
-        snprintf(ctype, sizeof(ctype), MODES_CONTENT_TYPE_HTML));
+        snprintf(ctype, sizeof(ctype), MODES_CONTENT_TYPE_HTML);
     }
 #endif
 
