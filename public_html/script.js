@@ -18,7 +18,7 @@ CenterLon = Number(localStorage['CenterLon']) || CONST_CENTERLON;
 ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
 
 function fetchData() {
-	$.getJSON('/dump1090/data.json', function(data) {
+	$.getJSON('data.json', function(data) {
 		PlanesOnMap = 0
 		SpecialSquawk = false;
 		
@@ -396,26 +396,20 @@ function normalizeTrack(track, valid){
 // Refeshes the larger table of all the planes
 function refreshTableInfo() {
 	var html = '<table id="tableinfo" width="100%">';
-	html += '<thead style="background-color: #BBBBBB; cursor: pointer;">';
-	html += '<td onclick="setASC_DESC(\'0\');sortTable(\'tableinfo\',\'0\');">ICAO</td>';
-	html += '<td onclick="setASC_DESC(\'1\');sortTable(\'tableinfo\',\'1\');">Flight</td>';
-	html += '<td onclick="setASC_DESC(\'2\');sortTable(\'tableinfo\',\'2\');" ' +
-	    'align="right">Squawk</td>';
-	html += '<td onclick="setASC_DESC(\'3\');sortTable(\'tableinfo\',\'3\');" ' +
-	    'align="right">Altitude</td>';
-	html += '<td onclick="setASC_DESC(\'4\');sortTable(\'tableinfo\',\'4\');" ' +
-	    'align="right">Speed</td>';
-        // Add distance column header to table if site coordinates are provided
-        if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined')) {
-            html += '<td onclick="setASC_DESC(\'5\');sortTable(\'tableinfo\',\'5\');" ' +
-                'align="right">Distance</td>';
+
+        var icount = 0;
+        var theader = ["ICAO","Flight","Squawk","Altitude","Speed"];
+        if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined'))
+                theader.push("Distance");
+        theader = theader.concat(["Track","Msgs","Signal","Seen"]);
+
+        html += '<thead style="background-color: #BBBBBB; cursor: pointer;">';
+        for ( var item in theader ) {
+                html += '<td onclick="setASC_DESC(\''+icount+'\');sortTable(\'tableinfo\',\''+icount+'\');" '+((icount>2) ? 'align="right"' : '' )+'>'+theader[item]+'</td>';
+                icount++;
         }
-	html += '<td onclick="setASC_DESC(\'5\');sortTable(\'tableinfo\',\'6\');" ' +
-	    'align="right">Track</td>';
-	html += '<td onclick="setASC_DESC(\'6\');sortTable(\'tableinfo\',\'7\');" ' +
-	    'align="right">Msgs</td>';
-	html += '<td onclick="setASC_DESC(\'7\');sortTable(\'tableinfo\',\'8\');" ' +
-	    'align="right">Seen</td></thead><tbody>';
+        html += '</thead><tbody>';
+
 	for (var tablep in Planes) {
 		var tableplane = Planes[tablep]
 		if (!tableplane.reapable) {
@@ -487,6 +481,7 @@ function refreshTableInfo() {
     	    }
     	    html += '</td>';
 			html += '<td align="right">' + tableplane.messages + '</td>';
+			html += '<td align="right">' + tableplane.signal + '</td>';
 			html += '<td align="right">' + tableplane.seen + '</td>';
 			html += '</tr>';
 		}
