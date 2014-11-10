@@ -801,13 +801,14 @@ int handleHTTPRequest(struct client *c, char *p) {
                 } else {
                     clen = snprintf(buf, sizeof(buf), "Error reading %s: %s",
                         getFile, strerror(errno));
+                    content = strdup(buf);
                     httpcode = HTTP_SERVERERROR;
                 }
             } else {
-                httpcode = HTTP_NOTFOUND;
                 clen = snprintf(buf, sizeof(buf), "Error opening %s: %s",
                     getFile, strerror(errno));
                 content = strdup(buf);
+                httpcode = HTTP_NOTFOUND;
             }
         }
         
