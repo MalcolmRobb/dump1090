@@ -697,6 +697,11 @@ char *aircraftsToJson(int *len) {
 //
 //=========================================================================
 //
+
+// RFC2616 defines the status line as "Version Code Reason"
+#define HTTP_OK "200 OK"
+#define HTTP_NOTFOUND "404 Not Found"
+#define HTTP_SERVERERROR "500 Server Error"
 #define MODES_CONTENT_TYPE_HTML "text/html;charset=utf-8"
 #define MODES_CONTENT_TYPE_CSS  "text/css;charset=utf-8"
 #define MODES_CONTENT_TYPE_JSON "application/json;charset=utf-8"
@@ -712,8 +717,8 @@ char *aircraftsToJson(int *len) {
 int handleHTTPRequest(struct client *c, char *p) {
     char hdr[512];
     int clen, hdrlen;
+    char *httpcode = HTTP_OK;
     int httpver, keepalive;
-    int statuscode = 500;
     char *url, *content;
     char ctype[48];
     char getFile[1024];
@@ -755,42 +760,74 @@ int handleHTTPRequest(struct client *c, char *p) {
     // Select the content to send, we have just two so far:
     // "/" -> Our google map application.
     // "/data.json" -> Our ajax request to update planes.
+    // "/config.json" -> Our ajax request to configure the webui.
     if (strstr(url, "/data.json")) {
-        statuscode = 200;
         content = aircraftsToJson(&clen);
         //snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JSON);
+    } else if (strstr(url, "/config.json")) {
+        if (Modes.fUserLat != 0.0 && Modes.fUserLon != 0.0) {
+            char buf[128];
+            clen = snprintf(buf, sizeof(buf),
+                "{\"SiteLat\": %f, \"SiteLon\": %f}",
+                Modes.fUserLat, Modes.fUserLon);
+            content = strdup(buf);
+        } else {
+            content = strdup("{}");
+            clen = strlen(content);
+        }
     } else {
+#ifndef DEBIAN
         struct stat sbuf;
         int fd = -1;
         char *rp, *hrp;
+        char buf[128];
 
         rp = realpath(getFile, NULL);
         hrp = realpath(HTMLPATH, NULL);
         hrp = (hrp ? hrp : HTMLPATH);
-        clen = -1;
-        content = strdup("Server error occured");
+
+        content = strdup("Not found.");
+        clen = strlen(content);
+        httpcode = HTTP_NOTFOUND;
+
         if (rp && (!strncmp(hrp, rp, strlen(hrp)))) {
-            if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY)) != -1) {
+            if (stat(getFile, &sbuf) != -1 &&
+                (fd = open(getFile, O_RDONLY)) != -1) {
                 content = (char *) realloc(content, sbuf.st_size);
+
                 if (read(fd, content, sbuf.st_size) != -1) {
                     clen = sbuf.st_size;
-                    statuscode = 200;
+                    httpcode = HTTP_OK;
+                } else {
+                    clen = snprintf(buf, sizeof(buf), "Error reading %s: %s",
+                        getFile, strerror(errno));
+                    content = strdup(buf);
+                    httpcode = HTTP_SERVERERROR;
                 }
+            } else {
+                clen = snprintf(buf, sizeof(buf), "Error opening %s: %s",
+                    getFile, strerror(errno));
+                content = strdup(buf);
+                httpcode = HTTP_NOTFOUND;
             }
-        } else {
-            errno = ENOENT;
-        }
-
-        if (clen < 0) {
-            content = realloc(content, 128);
-            clen = snprintf(content, 128,"Error opening HTML file: %s", strerror(errno));
-            statuscode = 404;
         }
         
         if (fd != -1) {
             close(fd);
         }
     }
+#endif
+
+#ifdef DEBIAN
+        /* Disable local filesystem access in the Debian build.  The package
+         * will use apache2 and a reverse proxy to serve HTTP due to the 
+         * complexity of maintaining a secure HTTP implementation.
+         */
+        httpcode = HTTP_NOTFOUND;
+        content = strdup("File not found.");
+        clen = strlen(content);
+    }
+#endif
 
     // Get file extension and content type
     snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_HTML); // Default content type
@@ -808,7 +845,7 @@ int handleHTTPRequest(struct client *c, char *p) {
 
     // Create the header and send the reply
     hdrlen = snprintf(hdr, sizeof(hdr),
-        "HTTP/1.1 %d \r\n"
+        "HTTP/1.1 %s\r\n"
         "Server: Dump1090\r\n"
         "Content-Type: %s\r\n"
         "Connection: %s\r\n"
@@ -816,7 +853,7 @@ int handleHTTPRequest(struct client *c, char *p) {
         "Cache-Control: no-cache, must-revalidate\r\n"
         "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
         "\r\n",
-        statuscode,
+        httpcode,
         ctype,
         keepalive ? "keep-alive" : "close",
         clen);
@@ -827,15 +864,23 @@ int handleHTTPRequest(struct client *c, char *p) {
 
     // Send header and content.
 #ifndef _WIN32
-    if ( (write(c->fd, hdr, hdrlen) != hdrlen) 
-      || (write(c->fd, content, clen) != clen) ) {
-#else
-    if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen) 
-      || (send(c->fd, content, clen, 0) != clen) ) {
-#endif
+    if (anetWrite(c->fd, hdr, hdrlen) != hdrlen) {
+        perror("HTTP short write of reply header");
         free(content);
         return 1;
     }
+    if (anetWrite(c->fd, content, clen) != clen) {
+        perror("HTTP short write of content");
+        free(content);
+        return 1;
+    }
+#else
+    if ( (send(c->fd, hdr, hdrlen, 0) != hdrlen) 
+      || (send(c->fd, content, clen, 0) != clen) ) {
+        free(content);
+        return 1;
+    }
+#endif
     free(content);
     Modes.stat_http_requests++;
     return !keepalive;
