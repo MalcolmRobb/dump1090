@@ -25,6 +25,7 @@ StaleColor = "rgb(190, 190, 190)";
 // -- Site Settings ---------------------------------------
 SiteShow    = false; // true or false
 // The Latitude and Longitude in decimal format
+// or just use CONST_CENTERLAT & CONST_CENTERLON, if site is identically with map setting.
 SiteLat     = 45.0;
 SiteLon     = 9.0;
 
