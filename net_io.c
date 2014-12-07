@@ -762,14 +762,16 @@ int handleHTTPRequest(struct client *c, char *p) {
     } else {
         struct stat sbuf;
         int fd = -1;
-        char *rp, *hrp;
+        char rp[PATH_MAX], hrp[PATH_MAX];
 
-        rp = realpath(getFile, NULL);
-        hrp = realpath(HTMLPATH, NULL);
-        hrp = (hrp ? hrp : HTMLPATH);
+        if (!realpath(getFile, rp))
+            rp[0] = 0;
+        if (!realpath(HTMLPATH, hrp))
+            strcpy(hrp, HTMLPATH);
+
         clen = -1;
         content = strdup("Server error occured");
-        if (rp && (!strncmp(hrp, rp, strlen(hrp)))) {
+        if (!strncmp(hrp, rp, strlen(hrp))) {
             if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY)) != -1) {
                 content = (char *) realloc(content, sbuf.st_size);
                 if (read(fd, content, sbuf.st_size) != -1) {
