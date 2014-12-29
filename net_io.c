@@ -770,7 +770,11 @@ int handleHTTPRequest(struct client *c, char *p) {
         clen = -1;
         content = strdup("Server error occured");
         if (rp && (!strncmp(hrp, rp, strlen(hrp)))) {
-            if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY)) != -1) {
+            if (stat(getFile, &sbuf) != -1 && (fd = open(getFile, O_RDONLY
+#ifdef _WIN32
+                           | O_BINARY
+#endif
+                           )) != -1) {
                 content = (char *) realloc(content, sbuf.st_size);
                 if (read(fd, content, sbuf.st_size) != -1) {
                     clen = sbuf.st_size;
