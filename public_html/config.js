@@ -30,5 +30,8 @@ SiteLon     = 9.0;
 
 SiteCircles = true; // true or false (Only shown if SiteShow is true)
 // In nautical miles or km (depending settings value 'Metric')
-SiteCirclesDistances = new Array(100,150,200);
+SiteCirclesDistances = new Array(50,100,150,200);
 
+// Extended Airplane Marker
+airplanemarker_showextended = true;
+airplanemarker_showtext     = true;
