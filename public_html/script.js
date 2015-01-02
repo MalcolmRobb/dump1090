@@ -62,6 +62,8 @@ function initialize() {
 	}
 	// Push OSM on to the end
 	mapTypeIds.push("OSM");
+	mapTypeIds.push("OSM2");
+	mapTypeIds.push("OAIP");
 	mapTypeIds.push("dark_map");
 
 	// Styled Map to outline airports and highways
@@ -155,8 +157,57 @@ function initialize() {
 		name: "OpenStreetMap",
 		maxZoom: 18
 	}));
+	
+	//Define OSM2 (cycle) map type pointing at the OpenCycleMap tile server
+	GoogleMap.mapTypes.set("OSM2", new google.maps.ImageMapType({
+		getTileUrl: function(coord, zoom) {
+			return "http://tile3.opencyclemap.org/landscape/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
+		},
+		tileSize: new google.maps.Size(256, 256),
+		name: "OpenCycleMap",
+		maxZoom: 18
+	}));
+	
+	// Define OAIP map type pointing at the OpenCycleMap tile server with Open AIP overlay
+	var aipoverlay = new google.maps.ImageMapType({
+		getTileUrl: function(coord, zoom) {
+			// convert y tile index to TMS System (invert tile y origin from top to bottom of map)
+			var aipoverlay_ymax = 1 << zoom;
+			var aipoverlay_y = aipoverlay_ymax - coord.y - 1;
+			// return tile adress
+			return "http://2.tile.maps.openaip.net/geowebcache/service/tms/1.0.0/openaip_basemap@png/" + zoom + "/" + coord.x + "/" + aipoverlay_y + ".png"; //Overlay Airspace openAIP
+		},
+		tileSize: new google.maps.Size(256, 256)
+	});
+	GoogleMap.mapTypes.set("OAIP", new google.maps.ImageMapType({
+		getTileUrl: function(coord, zoom) {
+			return "http://tile3.opencyclemap.org/landscape/" + zoom + "/" + coord.x + "/" + coord.y + ".png"; //OSM Cycle
+		},
+		tileSize: new google.maps.Size(256, 256),
+		name: "OpenAIPMap",
+		maxZoom: 18
+	}));
+	
+	// we check mapType when it is changing
+	google.maps.event.addListener( GoogleMap, "maptypeid_changed", function( evnt ) {
+		if(GoogleMap.mapTypeId === "OAIP") {
+			// show my custom map layer - but only if its not already there
+			// note: you could also check more specifily your map type here
+				if(GoogleMap.overlayMapTypes.getLength() == 0) {
+					GoogleMap.overlayMapTypes.insertAt(0, aipoverlay);
+				}
+		} else {
+			// if something else, remove it 
+			// note: you could also check more specifily your map type here, but for now
+			// we just check if something is already there
+				if (GoogleMap.overlayMapTypes.getLength() > 0){
+					GoogleMap.overlayMapTypes.removeAt(0);
+				}
+		}
+	});
 
 	GoogleMap.mapTypes.set("dark_map", styledMap);
+	
 	
 	// Listeners for newly created Map
     google.maps.event.addListener(GoogleMap, 'center_changed', function() {
