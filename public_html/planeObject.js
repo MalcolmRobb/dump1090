@@ -27,6 +27,7 @@ var planeObject = {
 	// GMap Details
 	marker		: null,
 	markerColor	: MarkerColor,
+	mapLabel  : null,
 	lines		: [],
 	trackdata	: new Array(),
 	trackline	: new Array(),
@@ -157,6 +158,10 @@ var planeObject = {
 					this.marker.setMap(null);
 					this.marker = null;
 				}
+				if (this.mapLabel) {
+					this.mapLabel.set('map', null);
+					this.mapLabel = null;
+				}
 				if (this.line) {
 					this.line.setMap(null);
 					this.line = null;
@@ -198,6 +203,9 @@ var planeObject = {
 					}
 				}
 				this.marker = this.funcUpdateMarker();
+				if (airplanemarker_showtext) {
+					this.mapLabel = this.funcUpdateLabel();
+				}
 				PlanesOnMap++;
 			} else {
 				this.vPosition = false;
@@ -233,11 +241,46 @@ var planeObject = {
 			// Setting the marker title
 			if (this.flight.length == 0) {
 				this.marker.setTitle(this.hex);
-			} else {
+			} else if (airplanemarker_showextended) {
+				this.marker.setTitle(this.flight+' ('+this.icao+')'+"\r\n"+'SQUAWK: '+this.squawk+', Alt: '+this.altitude+', HDG: '+this.track+', Spd: '+this.speed+'');
+			}
+			else {
 				this.marker.setTitle(this.flight+' ('+this.icao+')');
 			}
+			
 			return this.marker;
 		},
+
+
+	// Update label on the map
+	funcUpdateLabel: function() {
+			if (this.mapLabel) {
+				this.mapLabel.set('position', new google.maps.LatLng(this.latitude, this.longitude));
+			} else {
+				this.mapLabel = new MapLabel({
+					text: ''+this.hex+'  ',
+					position: new google.maps.LatLng(this.latitude, this.longitude),
+					map: GoogleMap,
+					fontSize: 12,
+					align: 'right'
+				});
+			}
+			
+			if (airplanemarker_showtext) {
+				if (this.flight.length == 0) {
+					this.mapLabel.set('text', this.hex+'  ');
+				} else if (airplanemarker_showextended) {
+					this.mapLabel.set('text', ''+this.flight+'|'+this.altitude+'ft|'+this.speed+'kts|'+this.squawk+'  ');
+				} else {
+					this.mapLabel.set('text', this.flight+'  ');
+				}
+			} else {
+				this.mapLabel.set('text', '');
+			}
+			
+			return this.mapLabel;
+		},
+
 
 	// Update our planes tail line,
 	// TODO: Make this multi colored based on options
