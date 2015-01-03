@@ -15,6 +15,7 @@ CONST_CENTERLAT = 45.0;
 CONST_CENTERLON = 9.0;
 // The google maps zoom level, 0 - 16, lower is further out
 CONST_ZOOMLVL   = 5;
+StandardMapType = 'OSM2'; // mapType[google.maps.MapTypeId.ROADMAP|google.maps.MapTypeId.TERRAIN|google.maps.MapTypeId.SATELLITE|'OSM'|'OSM2'|'OAIP'|'dark_map']. google mapTypeIDs without ' ' eg. google.maps.MapTypeId.ROADMAP
 
 // -- Marker settings -------------------------------------
 // The default marker color
