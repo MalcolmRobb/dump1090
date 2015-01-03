@@ -136,7 +136,7 @@ function initialize() {
 	var mapOptions = {
 		center: new google.maps.LatLng(CenterLat, CenterLon),
 		zoom: ZoomLvl,
-		mapTypeId: google.maps.MapTypeId.ROADMAP,
+		mapTypeId: StandardMapType,
 		mapTypeControl: true,
 		streetViewControl: false,
 		mapTypeControlOptions: {
@@ -674,6 +674,7 @@ function resetMap() {
     // Set and refresh
 	GoogleMap.setZoom(parseInt(ZoomLvl));
 	GoogleMap.setCenter(new google.maps.LatLng(parseFloat(CenterLat), parseFloat(CenterLon)));
+	GoogleMap.setMapTypeId(StandardMapType);
 	
 	if (SelectedPlane) {
 	    selectPlaneByHex(SelectedPlane);
