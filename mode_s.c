@@ -1949,8 +1949,14 @@ void useModesMessage(struct modesMessage *mm) {
 //
 // Always positive MOD operation, used for CPR decoding.
 //
-int cprModFunction(int a, int b) {
+int cprModInt(int a, int b) {
     int res = a % b;
+    if (res < 0) res += b;
+    return res;
+}
+
+double cprModDouble(double a, double b) {
+    double res = fmod(a,b);
     if (res < 0) res += b;
     return res;
 }
@@ -2054,8 +2060,8 @@ int decodeCPR(struct aircraft *a, int fflag, int surface) {
 
     // Compute the Latitude Index "j"
     int    j     = (int) floor(((59*lat0 - 60*lat1) / 131072) + 0.5);
-    double rlat0 = AirDlat0 * (cprModFunction(j,60) + lat0 / 131072);
-    double rlat1 = AirDlat1 * (cprModFunction(j,59) + lat1 / 131072);
+    double rlat0 = AirDlat0 * (cprModInt(j,60) + lat0 / 131072);
+    double rlat1 = AirDlat1 * (cprModInt(j,59) + lat1 / 131072);
 
     time_t now = time(NULL);
     double surface_rlat = MODES_USER_LATITUDE_DFLT;
@@ -2073,8 +2079,13 @@ int decodeCPR(struct aircraft *a, int fflag, int surface) {
             // No local reference, give up
             return (-1);
         }
-        rlat0 += floor(surface_rlat / 90.0) * 90.0;  // Move from 1st quadrant to our quadrant
-        rlat1 += floor(surface_rlat / 90.0) * 90.0;
+
+        // Pick the quadrant that's closest to the reference location -
+        // this is not necessarily the same quadrant that contains the
+        // reference location. Note there are only two valid quadrants
+        // here (northern/southern hemisphere)
+        if ( (rlat0 - surface_rlat) > 45 ) rlat0 -= 90;
+        if ( (rlat1 - surface_rlat) > 45 ) rlat1 -= 90;
     } else {
         if (rlat0 >= 270) rlat0 -= 360;
         if (rlat1 >= 270) rlat1 -= 360;
@@ -2093,18 +2104,22 @@ int decodeCPR(struct aircraft *a, int fflag, int surface) {
         int ni = cprNFunction(rlat1,1);
         int m = (int) floor((((lon0 * (cprNLFunction(rlat1)-1)) -
                               (lon1 * cprNLFunction(rlat1))) / 131072.0) + 0.5);
-        a->lon = cprDlonFunction(rlat1, 1, surface) * (cprModFunction(m, ni)+lon1/131072);
+        a->lon = cprDlonFunction(rlat1, 1, surface) * (cprModInt(m, ni)+lon1/131072);
         a->lat = rlat1;
     } else {     // Use even packet.
         int ni = cprNFunction(rlat0,0);
         int m = (int) floor((((lon0 * (cprNLFunction(rlat0)-1)) -
                               (lon1 * cprNLFunction(rlat0))) / 131072) + 0.5);
-        a->lon = cprDlonFunction(rlat0, 0, surface) * (cprModFunction(m, ni)+lon0/131072);
+        a->lon = cprDlonFunction(rlat0, 0, surface) * (cprModInt(m, ni)+lon0/131072);
         a->lat = rlat0;
     }
 
     if (surface) {
-        a->lon += floor(surface_rlon / 90.0) * 90.0;  // Move from 1st quadrant to our quadrant
+        // Pick the quadrant that's closest to the reference location -
+        // this is not necessarily the same quadrant that contains the
+        // reference location.
+        a->lon += floor( (surface_rlon - a->lon + 45) / 90 ) * 90;  // if we are >45 degrees away, move towards the reference position
+        a->lon -= floor( (a->lon + 180) / 360 ) * 360;              // normalize to (-180..+180)
     } else if (a->lon > 180) {
         a->lon -= 360;
     }
@@ -2121,13 +2136,9 @@ int decodeCPR(struct aircraft *a, int fflag, int surface) {
 // This algorithm comes from:
 // 1090-WP29-07-Draft_CPR101 (which also defines decodeCPR() )
 //
-// There is an error in this document related to CPR relative decode.
-// Should use trunc() rather than the floor() function in Eq 38 and related for deltaZI.
-// floor() returns integer less than argument
-// trunc() returns integer closer to zero than argument.
-// Note:   text of document describes trunc() functionality for deltaZI calculation
-//         but the formulae use floor().
-//
+// Despite what the earlier comment here said, we should *not* be using trunc().
+// See Figure 5-5 / 5-6 and note that floor() is applied to (0.5 + fRP - fEP), not
+// directly to (fRP - fEP). Eq 38 is correct. and we should use floor().
 int decodeCPRrelative(struct aircraft *a, int fflag, int surface) {
     double AirDlat;
     double AirDlon;
@@ -2140,7 +2151,7 @@ int decodeCPRrelative(struct aircraft *a, int fflag, int surface) {
     if (a->bFlags & MODES_ACFLAGS_LATLON_REL_OK) { // Ok to try aircraft relative first
         latr = a->lat;
         lonr = a->lon;
-    } else if (Modes.bUserFlags & MODES_USER_LATLON_VALID) { // Try ground station relative next
+    } else if (!surface && (Modes.bUserFlags & MODES_USER_LATLON_VALID)) { // Try ground station relative next
         latr = Modes.fUserLat;
         lonr = Modes.fUserLon;
     } else {
@@ -2159,7 +2170,7 @@ int decodeCPRrelative(struct aircraft *a, int fflag, int surface) {
 
     // Compute the Latitude Index "j"
     j = (int) (floor(latr/AirDlat) +
-               trunc(0.5 + cprModFunction((int)latr, (int)AirDlat)/AirDlat - lat/131072));
+               floor(0.5 + cprModDouble(latr, AirDlat)/AirDlat - lat/131072));
     rlat = AirDlat * (j + lat/131072);
     if (rlat >= 270) rlat -= 360;
 
@@ -2170,7 +2181,7 @@ int decodeCPRrelative(struct aircraft *a, int fflag, int surface) {
     }
 
     // Check to see that answer is reasonable - ie no more than 1/2 cell away 
-    if (fabs(rlat - a->lat) > (AirDlat/2)) {
+    if (fabs(rlat - latr) > (AirDlat/2)) {
         a->bFlags &= ~MODES_ACFLAGS_LATLON_REL_OK; // This will cause a quick exit next time if no global has been done
         return (-1);                               // Time to give up - Latitude error 
     }
@@ -2178,12 +2189,12 @@ int decodeCPRrelative(struct aircraft *a, int fflag, int surface) {
     // Compute the Longitude Index "m"
     AirDlon = cprDlonFunction(rlat, fflag, surface);
     m = (int) (floor(lonr/AirDlon) +
-               trunc(0.5 + cprModFunction((int)lonr, (int)AirDlon)/AirDlon - lon/131072));
+               floor(0.5 + cprModDouble(lonr, AirDlon)/AirDlon - lon/131072));
     rlon = AirDlon * (m + lon/131072);
     if (rlon > 180) rlon -= 360;
 
     // Check to see that answer is reasonable - ie no more than 1/2 cell away
-    if (fabs(rlon - a->lon) > (AirDlon/2)) {
+    if (fabs(rlon - lonr) > (AirDlon/2)) {
         a->bFlags &= ~MODES_ACFLAGS_LATLON_REL_OK; // This will cause a quick exit next time if no global has been done
         return (-1);                               // Time to give up - Longitude error
     }
