@@ -796,7 +796,7 @@ int handleHTTPRequest(struct client *c, char *p) {
     snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_HTML); // Default content type
     ext = strrchr(getFile, '.');
 
-    if (strlen(ext) > 0) {
+    if (ext) {
         if (strstr(ext, ".json")) {
             snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JSON);
         } else if (strstr(ext, ".css")) {
