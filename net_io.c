@@ -912,7 +912,7 @@ void modesReadFromClient(struct client *c, char *sep,
             // in the buffer, note that we full-scan the buffer at every read for simplicity.
 
             left = c->buflen;                                  // Length of valid search for memchr()
-            while (left && ((s = memchr(e, (char) 0x1a, left)) != NULL)) { // The first byte of buffer 'should' be 0x1a
+            while (left > 1 && ((s = memchr(e, (char) 0x1a, left)) != NULL)) { // The first byte of buffer 'should' be 0x1a
                 s++;                                           // skip the 0x1a
                 if        (*s == '1') {
                     e = s + MODEAC_MSG_BYTES      + 8;         // point past remainder of message
