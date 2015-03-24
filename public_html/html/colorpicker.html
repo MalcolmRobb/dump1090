@@ -1,0 +1,36 @@
+
+<html>
+<head>
+    <script type="text/javascript" src="..//js/settings/settings.js"></script>
+    <script type="text/javascript" src="..//js/settings/config.js"></script>
+    <script type="text/javascript" src="..//js/settings/color/jscolor.js"></script>
+</head>
+<body >
+    <p id="color1" >Marker Color:
+    <input id="myField1" onchange="storevalue('1r',hexToRgb('#'+myPicker1).r),storevalue('1g',hexToRgb('#'+myPicker1).g),storevalue('1b',hexToRgb('#'+myPicker1).b)"></p>
+    <p id="color2" >Selected Color:
+    <input id="myField2" onchange="storevalue('2r',hexToRgb('#'+myPicker2).r),storevalue('2g',hexToRgb('#'+myPicker2).g),storevalue('2b',hexToRgb('#'+myPicker2).b)"></p>
+    <p id="color3" >Scale Color:
+    <input id="myField3" onchange="storevalue('3r',hexToRgb('#'+myPicker3).r),storevalue('3g',hexToRgb('#'+myPicker3).g),storevalue('3b',hexToRgb('#'+myPicker3).b)"></p>
+    <script type="text/javascript">
+	var color11 = document.getElementById('color1');
+	var color22 = document.getElementById('color2');
+	var color33 = document.getElementById('color3');
+	if(getvalue('darkmode')){
+	  document.body.style.backgroundColor = "black";
+	  color11.style.color = "#FFFFFF";
+	  color22.style.color = "#FFFFFF";
+	  color33.style.color = "#FFFFFF";
+	}
+	color1 = rgbToHex( Number(getvalue('1r')), Number(getvalue('1g')), Number(getvalue('1b'))  );
+	color2 = rgbToHex( Number(getvalue('2r')), Number(getvalue('2g')), Number(getvalue('2b'))  );
+	color3 = rgbToHex( Number(getvalue('3r')), Number(getvalue('3g')), Number(getvalue('3b'))  );
+	var myPicker1 = new jscolor.color(document.getElementById('myField1'), {})
+	myPicker1.fromString(color1)
+	var myPicker2 = new jscolor.color(document.getElementById('myField2'), {})
+	myPicker2.fromString(color2)
+	var myPicker3 = new jscolor.color(document.getElementById('myField3'), {})
+	myPicker3.fromString(color3)
+	</script>
+</body>
+</html>

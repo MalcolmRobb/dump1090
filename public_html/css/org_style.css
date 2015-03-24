@@ -1,11 +1,11 @@
 html, body {
-    margin: 0; padding: 0; background-color: #ffffff; font-family: Tahoma, Sans-Serif;
+    margin: 0; padding: 0; background-color: grey; font-family: Tahoma, Sans-Serif;
     font-size: 10pt; overflow: auto; height: 100%;
 }
 div#map_container     { float: left; width: 100%; height: 100%; }
 div#map_canvas        { height: 100%; margin-right: 420px; }
 
-div#sidebar_container { float: left; width: 410px; margin-left: -410px; height: 100%; overflow: auto; }
+div#sidebar_container { float: left; width: 410px; margin-left: -410px; height: 100%; overflow: auto;background-color:grey; }
 
 div#SpecialSquawkWarning { position: absolute; bottom: 25px; right: 430px; border: 2px solid red;
     background-color: #FFFFA3; opacity: 0.75; filter:alpha(opacity=75); padding: 5px;
@@ -16,7 +16,7 @@ table#optionsTabs { width: 100%; font-size: small; font-family: monospace; backg
 
 #tableinfo, #sudo_buttons { font-size: x-small; font-family: monospace; }
 
-.vPosition  { font-weight: bold; background-color: #d5ffd5; }
+.vPosition  { font-weight: bold; background-color: #00FF00; }
 .squawk7500 { font-weight: bold; background-color: #ff5555; }
 .squawk7600 { font-weight: bold; background-color: #00ffff; }
 .squawk7700 { font-weight: bold; background-color: #ffff00; }
@@ -26,7 +26,18 @@ table#optionsTabs { width: 100%; font-size: small; font-family: monospace; backg
 #selectedinfotitle  { font-size: larger; }
 #selectedinfo       { font-size: small; }
 #selectedinfo a     { text-decoration: none; color: blue; font-size: x-small;}
-#selectedinfo.dim   { opacity: 0.3; filter:alpha(opacity=30); /* For IE8 and earlier */ }
 
 .pointer { cursor: pointer; }
-
+#dialog-modal {display:none;}
+/*  loading page*/
+.no-js #loader { display: none;  }
+.js #loader { display: block; position: absolute; left: 100px; top: 0; }
+.se-pre-con {
+	position: fixed;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+	z-index: 9999;
+	background: url(loader/Preloader_8.gif) center no-repeat #fff;
+}

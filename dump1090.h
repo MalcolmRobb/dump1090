@@ -57,6 +57,7 @@
     #include <ctype.h>
     #include <sys/stat.h>
     #include <sys/ioctl.h>
+    #include <limits.h>
     #include "rtl-sdr.h"
     #include "anet.h"
 #else

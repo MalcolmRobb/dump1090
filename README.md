@@ -5,7 +5,7 @@ Dump 1090 is a Mode S decoder specifically designed for RTLSDR devices.
 
 The main features are:
 
-* Robust decoding of weak messages, with mode1090 many users observed
+* Robust decoding of weak messages, with dump1090 many users observed
   improved range compared to other popular decoders.
 * Network support: TCP30003 stream (MSG5...), Raw packets, HTTP.
 * Embedded HTTP server that displays the currently detected aircrafts on
@@ -223,7 +223,7 @@ Mode S peak was found. Some additional background noise is also added
 before the first peak to provide some context.
 
 To enable debug mode and check what combinations of packets you can
-log, use `mode1090 --help` to obtain a list of available debug flags.
+log, use `dump1090 --help` to obtain a list of available debug flags.
 
 Debug mode includes an optional javascript output that is used to visualize
 packets using a web browser, you can use the file debug.html under the

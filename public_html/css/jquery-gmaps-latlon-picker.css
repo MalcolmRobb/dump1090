@@ -1,0 +1,2 @@
+/* If the map DIV doesn't have a size set up, it won't appear on the page */
+.gllpMap	{ width: 870px; height: 350px; }

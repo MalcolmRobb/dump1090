@@ -1,0 +1,29 @@
+
+<html>
+<head>
+    <script type="text/javascript" src="..//js/settings/settings.js"></script>
+    <script type="text/javascript" src="..//js/settings/config.js"></script>
+    <script type="text/javascript" src="..//js/settings/color/jscolor.js"></script>
+</head>
+<body >
+    <p id="color1" >True color:
+    <input id="myField1" onchange="storevalue('setr',hexToRgb('#'+myPicker1).r),storevalue('setg',hexToRgb('#'+myPicker1).g),storevalue('setb',hexToRgb('#'+myPicker1).b)"></p>
+    <p id="color2" >False Color:
+    <input id="myField2" onchange="storevalue('set2r',hexToRgb('#'+myPicker2).r),storevalue('set2g',hexToRgb('#'+myPicker2).g),storevalue('set2b',hexToRgb('#'+myPicker2).b)"></p>
+    <script type="text/javascript">
+	var color11 = document.getElementById('color1');
+	var color22 = document.getElementById('color2');
+	if(getvalue('darkmode')){
+	  document.body.style.backgroundColor = "black";
+	  color11.style.color = "#FFFFFF";
+	  color22.style.color = "#FFFFFF";
+	}
+	color1 = rgbToHex( Number(getvalue('setr')), Number(getvalue('setg')), Number(getvalue('setb'))  );
+	color2 = rgbToHex( Number(getvalue('set2r')), Number(getvalue('set2g')), Number(getvalue('set2b'))  );
+	var myPicker1 = new jscolor.color(document.getElementById('myField1'), {})
+	myPicker1.fromString(color1)
+	var myPicker2 = new jscolor.color(document.getElementById('myField2'), {})
+	myPicker2.fromString(color2)
+	</script>
+</body>
+</html>

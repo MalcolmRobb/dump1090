@@ -1,0 +1,19 @@
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td { margin: 0px; padding: 0px; border: 0px; outline: 0px; font-weight: inherit; font-style: inherit; font-size: 100%; font-family: inherit; vertical-align: baseline; }
+form	{ margin: 0px; padding: 0px; }
+table   { border-collapse: collapse; border-spacing: 0px; }
+caption, th, td {text-align: left; font-weight: normal; }
+blockquote:before, blockquote:after, q:before, q:after { content: ""; }
+blockquote, q { quotes: "" ""; }
+
+BODY    { color: #000; font-family: Helvetica, Arial, Verdana, sans-serif; font-size: 14.0px; }
+
+H1		{ font-size: 3em; }
+H2		{font-size: 1.8em; }
+
+/*UL 		{ margin: 0 20px; }
+UL LI	{ margin: 5px 0; }*/
+
+/*.gllpLatlonPicker	{ margin: 20px 0; }*/
+
+.code			{  font-size: 0.9em; width: 600px; font-family: "Monofur", courier; background-color: #555; padding: 15px; box-shadow: #f6f6f6 1px 1px 3px; color: #999; }
+.description	{line-height: 1.2em; }

@@ -1,0 +1,43 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="..//css/demo.css"/>
+	<link rel="stylesheet" type="text/css" href="..//css/jquery-gmaps-latlon-picker.css"/>
+	<script type="text/javascript" src="..//js/settings/settings.js"></script>
+	<script type="text/javascript" src="..//js/settings/config.js"></script>
+	<script src="..//js/settings/gmap/jquery-2.1.1.min.js"></script>
+	<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script>
+	<script src="..//js/settings/gmap/jquery-gmaps-latlon-picker.js"></script>
+</head>
+<body>
+<form>
+	<p id="color1"><b>Please pick your location(pick your home if showsite else pick nearnest town)</b>
+	<fieldset style=" display: inline;" class="gllpLatlonPicker" id="custom_id">
+		<input type="text" class="gllpSearchField" id="searchTextField" size="50" onkeydown="if (event.keyCode == 13) document.getElementById('searchbutton').click()">
+		<input type="button" class="gllpSearchButton" id="searchbutton" value="search"><b id="color3">Hit search button ONLY enter does not save settings</b>
+		<br/><br/>
+		<div class="gllpMap" >Google Maps</div>
+		<input  type="hidden" id="test" class="gllpLatitude" value=""/>
+		<input  type="hidden" id="test22" class="gllpLongitude" value=""/>
+		<input type="hidden" class="gllpZoom" value="" id="zoom"/>
+	</fieldset>
+</form>	
+<script>
+function initialize() {
+    var input = document.getElementById('searchTextField');
+    var autocomplete = new google.maps.places.Autocomplete(input);
+}
+google.maps.event.addDomListener(window, 'load', initialize);
+</script>
+<script>
+	var color11 = document.getElementById('color1');
+	var color33 = document.getElementById('color3');
+	if(getvalue('darkmode')){
+	  document.body.style.backgroundColor = "black";
+	  color11.style.color = "#FFFFFF";
+	  color33.style.color = "#FFFFFF";
+	}
+	var lat = document.getElementById('test').value = getvalue('maplat');
+	var lon = document.getElementById('test22').value = getvalue('maplon');
+	var zoom = document.getElementById('zoom').value = getvalue('zoom');
+</script>
+</body>
+</html>

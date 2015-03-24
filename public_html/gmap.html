@@ -1,24 +1,144 @@
 <html>
 	<head>
-		<meta charset="utf-8"/>
-		<link rel="stylesheet" type="text/css" href="style.css" />
-		<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
-		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-		<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
-		<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false&amp;libraries=geometry"></script>
-		<script type="text/javascript" src="config.js"></script>
-		<script type="text/javascript" src="planeObject.js"></script>
-		<script type="text/javascript" src="options.js"></script>
-		<script type="text/javascript" src="extension.js"></script>
-		<script type="text/javascript" src="script.js"></script>
-		<script type="text/javascript" src="coolclock/excanvas.js"></script>
-		<script type="text/javascript" src="coolclock/coolclock.js"></script>
-		<script type="text/javascript" src="coolclock/moreskins.js"></script>
-        <title>DUMP1090</title>
+		<meta charset="utf-8"/>	
+		<script  src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places"></script>
+		<script  src="/js/settings/settings.js"></script>
+		<script  src="/js/settings/config.js"></script>
+		<script>  
+		  if(getvalue('darkmode')){
+		    document.write('<link  rel="stylesheet" type="text/css" href="/css/darkmode.css" />');
+		    
+		  }else{
+		  document.write('<link rel="stylesheet" href="/css/style.css"/>');
+		  }</script>
+		<script  src="http://code.jquery.com/jquery-1.10.2.js"></script>
+		<script  src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+		<script src="/js/map/maplabel-compiled.js"></script>
+		<script src="/js/script/script.js"></script>
+		<script src="/js/plane/planeObject.js"></script>
+		<script src="/js/options/options.js"></script>
+		<script  src="/js/extension/extension.js"></script>
+		<script src="/js/coolclock/coolclock.js"></script>
+
+        <title id="titleonpage">DUMP1090</title>
 	</head>
-	<body onload="initialize()">
-		<div id="dialog-modal" title="Basic modal dialog" style="display:none;">
-			<p>The settings feature is coming soon. Keep checking GitHub.</p>
+	<body onload="initialize(),setup() ">
+		<div id="dialog-modal" title="Settings Note: Settings will take affect after setting page (aka:this pop up) is closed and page will auto refresh" style="minwidth:500;">
+		<div id="tabs">
+		<ul>
+		  <li><a href="#fragment-1"><span>Map overlay</span></a></li>
+		  <li><a href="#fragment-6"><span>Map settings</span></a></li>
+		  <li><a href="#fragment-4"><span>Plane color</span></a></li>
+		  <li><a href="#fragment-2"><span>Flight lookup</span></a></li>
+		  <li><a href="#fragment-3"><span>GPS settings</span></a></li>
+		  <li><a href="#fragment-7"><span>site settings</span></a></li>
+		  <li><a href="#fragment-5"><span>reset settings</span></a></li>
+		</ul>
+		<div id="fragment-2">
+		<p>flightaware show<div>
+			<button id="flightaware"  onclick="storevalue('flightawareshow','true'),flightaware()">true</button>
+			<button id="flightaware1"  onclick="localStorage.removeItem('flightawareshow'),flightaware()">false</button>
+			</p></div>
+			<p>fr24 show<div>
+			<button id="fr24"  onclick="storevalue('fr24show','true'),fr24()">true</button>
+			<button id="fr241"  onclick="localStorage.removeItem('fr24show'),fr24()">false</button>
+			</p></div>
+			<p>flightstats show<div>
+			<button id="flightstats" onclick="storevalue('flightstatsshow','true'),flightstats()">true</button>
+			<button id="flightstats1" onclick="localStorage.removeItem('flightstatsshow'),flightstats()">false</button>
+			</p></div>
+		</div>
+		<div id="fragment-1">
+			<p>Show Site<div>
+			<button id="showsite" onclick="storevalue('showsite','true'),showsite()">true</button>
+			<button id="showsite1" onclick="localStorage.removeItem('showsite'),showsite()">false</button>
+			</p></div>
+			<p>showcircles<div>
+			<button id="showcircles" onclick="storevalue('showcircles','true'),showcircles()">true</button>
+			<button id="showcircles1" onclick="localStorage.removeItem('showcircles'),showcircles()">false</button>
+			</p></div>
+			<p>airplanemarker_showtext<div>
+			<button id="airplanemarker" onclick="storevalue('airplanemarker_showtext','true'),airplanemarker()">true</button>
+			<button id="airplanemarker1" onclick="localStorage.removeItem('airplanemarker_showtext'),airplanemarker()">false</button>
+			</p></div>
+			<p>airplanemarker_showextended<div>
+			<button id="airplanemarkera" onclick="storevalue('airplanemarker_showextended','true'),airplanemarkera()">true</button>
+			<button id="airplanemarkera1" onclick="localStorage.removeItem('airplanemarker_showextended'),airplanemarkera()">false</button>
+			</p></div>
+		</div>
+		<div id="fragment-3">
+			<iframe src="/html/lat_lon.html" width="100%" height="430" no-scroll="no" frameBorder="0"></iframe>
+		</div>
+		<div id="fragment-4">
+		 <iframe src="/html/colorpicker.html" width="100%" height="250" no-scroll="no" frameBorder="0"></iframe>
+		</div>
+		<div id="fragment-5">
+		  <div><p>Warring will reset all setting to defalt ALL SETTINGS WILL BE LOST!!</p>
+			<button onclick="return reset()">Reset</button>
+		</div>
+		</div>
+		 <div id="fragment-6">
+		  <p>Metric<div>
+			<button id="metric" onclick="storevalue('metric','true'),metric()">true</button>
+			<button id="metric1" onclick="localStorage.removeItem('metric'),metric()">false</button>
+			</p></div>
+		  <p>Map zoom:
+			<div>
+			<select name="zoom" onchange="storevalue('zoom',value)" >
+			  <option value="null">select zoom</option>
+			  <option value="1">1</option>
+			  <option value="2">2</option>
+			  <option value="3">3</option>
+			  <option value="4">4</option>
+			  <option value="5">5</option>
+			  <option value="6">6</option>
+			  <option value="7">7</option>
+			  <option value="8">8</option>
+			  <option value="9">9</option>
+			  <option value="10">10</option>
+			  <option value="11">11</option>
+			  <option value="12">12</option>
+			  <option value="13">13</option>
+			  <option value="14">14</option>
+			  <option value="15">15</option>
+			  <option value="16">16</option>
+			  <option value="17">17</option>
+			  <option value="18">18</option>
+			  </select>
+			<button onclick="alert(localStorage.getItem('zoom'))">show</button>
+			</p></div>
+	      	</div>
+	      	<div id="fragment-7">
+	      	<div id="tabs2">
+		<ul>
+		  <li><a href="#fragment-1-1"><span>Site settings</span></a></li>
+		  <li><a href="#fragment-2-2"><span>settings settings</span></a></li>
+		</ul>
+		<div id="fragment-1-1">
+			    <div><p>show all planes &nbsp;&nbsp;Note:&nbsp;&nbsp;<b>true = show all planes in table&nbsp;&nbsp;false = show only planes on map in table</b></p>
+			    <button id="planedata1" onclick="localStorage.removeItem('planedata'),planedata1()">true</button>
+			    <button id="planedata" onclick="storevalue('planedata','true'),planedata1()">false</button>
+			    <br>
+			    <p>analog clock </p>
+			    <button id="coolclock" onclick="storevalue('coolclock','true'),coolclock1()">true</button>
+			    <button id="coolclock1" onclick="localStorage.removeItem('coolclock'),coolclock1()">false</button>
+			    <br>
+			    <p>digtal clock </p>
+			    <button id="normalclock" onclick="storevalue('normalclock','true'),normalclock1()">true</button>
+			    <button id="normalclock1" onclick="localStorage.removeItem('normalclock'),normalclock1()">false</button>
+			    </div>
+			    </div>
+		<div id="fragment-2-2">
+			    <div><p>Dark Mode </p>
+			    <button id="dark" onclick="storevalue('darkmode','true'),dark()">true</button>
+			    <button id="dark1" onclick="localStorage.removeItem('darkmode'),dark()">false</button>
+			    <br>
+			    <iframe  src="/html/settings_settings.html" width="100%" height="250" no-scroll="no" frameBorder="0"></iframe>
+			    </div>
+			    </div>
+			    </div>
+	      </div>
+	      </div>
 		</div>
 		<div id="map_container">
 			<div id="map_canvas"></div>
@@ -27,16 +147,18 @@
 			<div id="sidebar_canvas">
 				<div id="timestamps" style="align: center">
 					<table width="100%"><tr>
-						<td>Local Time</td>
-						<td>
-							<canvas id="localclock" class="CoolClock:classic:40"></canvas>
-						</td>
-						<td>UTC Time</td>
-						<td>
-							<canvas id="gmtclock" class="CoolClock:classic:40::0"></canvas>
-						</td>
+					<script>
+					if(getvalue('coolclock')){
+					  coolclock();
+					}
+					if(getvalue('normalclock')){
+					  normalclockcanvas();
+					}
+					</script>
 					</tr></table>
 				</div>
+				<div style="display:inline-block;" id="time"></div>
+				<div style="display:inline-block;margin-left:100px;" id="timegmt"></div>
 				<div id="sudo_buttons">
 					<table width="100%"><tr>
 						<td width="150" style="text-align: center;" class="pointer">
@@ -44,13 +166,12 @@
 						</td>
 						<td>&nbsp;</td>
 						<td width="150" style="text-align: center;" id="setings_button" class="pointer">
-						    [ <span onclick="optionsModal();">Settings</span> ]
+						    [ <span   class="link" onclick="optionsModal();">Settings</span> ]
 						</td>
 					</tr></table>
 				</div>
-
 				<div id="plane_detail"></div>
-				<div id="options"></div>
+				<div  id="options"></div>
 				<div id="planes_table"></div>
 				<div id="plane_extension"></div>
 			</div>
@@ -61,5 +182,10 @@
             Please do not call the local authorities, they already know about it if it is valid squak.
 		</div>
 		<div id="container_splitter"></div>
+		
+		<script>
+		$( "#tabs" ).tabs();
+		$( "#tabs2" ).tabs();
+		</script>
 	</body>
 </html>

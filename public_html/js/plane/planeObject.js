@@ -18,6 +18,7 @@ var planeObject = {
 
 	// Data packet numbers
 	messages	: null,
+	signal		: null,
 	seen		: null,
 
 	// Vaild...
@@ -27,6 +28,7 @@ var planeObject = {
 	// GMap Details
 	marker		: null,
 	markerColor	: MarkerColor,
+	mapLabel  	: null,
 	lines		: [],
 	trackdata	: new Array(),
 	trackline	: new Array(),
@@ -61,9 +63,9 @@ var planeObject = {
 
 			// If we have not seen a recent update, change color
 			if (this.seen > 15) {
-				this.markerColor = StaleColor;
+			    this.markerColor = StaleColor;
+			    //redOnMap--;
 			}
-			
 			// Plane marker
             var baseSvg = {
                 planeData : "M 1.9565564,41.694305 C 1.7174505,40.497708 1.6419973,38.448747 " +
@@ -135,27 +137,47 @@ var planeObject = {
 			var oldlat 	= this.latitude;
 			var oldlon	= this.longitude;
 			var oldalt	= this.altitude;
-
+			if(getvalue('planedata')){
+			if(data.lat !== 0){
 			// Update all of our data
-			this.updated	= new Date().getTime();
-			this.altitude	= data.altitude;
-			this.speed	= data.speed;
-			this.track	= data.track;
-			this.latitude	= data.lat;
-			this.longitude	= data.lon;
-			this.flight	= data.flight;
-			this.squawk	= data.squawk;
-			this.icao	= data.hex;
-			this.messages	= data.messages;
-			this.seen	= data.seen;
-
+			  this.updated	= new Date().getTime();
+			  this.altitude	= data.altitude;
+			  this.speed	= data.speed;
+			  this.track	= data.track;
+			  this.latitude	= data.lat;
+			  this.longitude	= data.lon;
+			  this.flight	= data.flight;
+			  this.squawk	= data.squawk;
+			  this.icao	= data.hex;
+			  this.messages	= data.messages;
+			  this.signal	= data.signal;
+			  this.seen	= data.seen;
+			}}else{
+			  this.updated	= new Date().getTime();
+			  this.altitude	= data.altitude;
+			  this.speed	= data.speed;
+			  this.track	= data.track;
+			  this.latitude	= data.lat;
+			  this.longitude	= data.lon;
+			  this.flight	= data.flight;
+			  this.squawk	= data.squawk;
+			  this.icao	= data.hex;
+			  this.messages	= data.messages;
+			  this.signal	= data.signal;
+			  this.seen	= data.seen;
+			}
 			// If no packet in over 58 seconds, consider the plane reapable
 			// This way we can hold it, but not show it just in case the plane comes back
 			if (this.seen > 58) {
 				this.reapable = true;
+				PlanesToReap++;
 				if (this.marker) {
 					this.marker.setMap(null);
 					this.marker = null;
+				}
+				if (this.mapLabel) {
+					this.mapLabel.set('map', null);
+					this.mapLabel = null;
 				}
 				if (this.line) {
 					this.line.setMap(null);
@@ -198,6 +220,9 @@ var planeObject = {
 					}
 				}
 				this.marker = this.funcUpdateMarker();
+				if (airplanemarker_showtext) {
+					this.mapLabel = this.funcUpdateLabel();
+				}
 				PlanesOnMap++;
 			} else {
 				this.vPosition = false;
@@ -233,11 +258,46 @@ var planeObject = {
 			// Setting the marker title
 			if (this.flight.length == 0) {
 				this.marker.setTitle(this.hex);
-			} else {
+			} else if (airplanemarker_showextended) {
+				this.marker.setTitle(this.flight+' ('+this.icao+')'+"\r\n"+'squawk: '+this.squawk+', Alt: '+this.altitude+', HDG: '+this.track+', Spd: '+this.speed+',seen:'+this.seen+ '');
+			}
+			else {
 				this.marker.setTitle(this.flight+' ('+this.icao+')');
 			}
+			
 			return this.marker;
 		},
+
+
+	// Update label on the map
+	funcUpdateLabel: function() {
+			if (this.mapLabel) {
+				this.mapLabel.set('position', new google.maps.LatLng(this.latitude, this.longitude));
+			} else {
+				this.mapLabel = new MapLabel({
+					text: ''+this.hex+'  ',
+					position: new google.maps.LatLng(this.latitude, this.longitude),
+					map: GoogleMap,
+					fontSize: 12,
+					align: 'right'
+				});
+			}
+			
+			if (airplanemarker_showtext) {
+				if (this.flight.length == 0) {
+					this.mapLabel.set('text', ''+this.altitude+'ft|'+this.speed+'kts|'+this.seen+'seen'+"   ");
+				} else if (airplanemarker_showextended) {
+					this.mapLabel.set('text', ''+this.altitude+'ft|'+this.speed+'kts|'+this.seen+'seen'+"   ");
+				} else {
+					this.mapLabel.set('text', this.flight+'  ');
+				}
+			} else {
+				this.mapLabel.set('text', '');
+			}
+			
+			return this.mapLabel;
+		},
+
 
 	// Update our planes tail line,
 	// TODO: Make this multi colored based on options
@@ -258,3 +318,4 @@ var planeObject = {
 			return this.line;
 		}
 };
+
