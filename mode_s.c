@@ -29,6 +29,10 @@
 //
 
 #include "dump1090.h"
+
+/* for PRIX64 */
+#include <inttypes.h>
+
 //
 // ===================== Mode S detection and decoding  ===================
 //
@@ -1144,7 +1148,6 @@ void decodeModesMessage(struct modesMessage *mm, unsigned char *msg) {
 //
 void displayModesMessage(struct modesMessage *mm) {
     int j;
-    unsigned char * pTimeStamp;
 
     // Handle only addresses mode first.
     if (Modes.onlyaddr) {
@@ -1154,11 +1157,7 @@ void displayModesMessage(struct modesMessage *mm) {
 
     // Show the raw message.
     if (Modes.mlat && mm->timestampMsg) {
-        printf("@");
-        pTimeStamp = (unsigned char *) &mm->timestampMsg;
-        for (j=5; j>=0;j--) {
-            printf("%02X",pTimeStamp[j]);
-        } 
+        printf("@%012" PRIX64, mm->timestampMsg);
     } else
         printf("*");
 
