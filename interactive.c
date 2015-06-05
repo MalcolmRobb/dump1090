@@ -122,6 +122,199 @@ struct stDF *interactiveFindDF(uint32_t addr) {
     }
     return (NULL);
 }
+
+// Elements of the allentries array
+struct icaodbentry {
+    uint32_t addr;           // ICAO 24 bit hex address
+    char reg[REGSIZE];       // Aircraft registration
+    char type[TYPESIZE];     // Aircraft type
+    char extype[EXTYPESIZE]; // Aircraft extended type
+};
+
+static struct icaodbentry *allentries = NULL; // Array of db entries
+static uint32_t numentries = 0; // count of number of entries in allentries
+static char blank[] = ""; // An empty string used for failed lookups
+
+//
+//=========================================================================
+//
+// On program startup read a TSV (tab seperated variables) list of ICAO address
+// to aircraft registration and type into an array for later use.
+//
+void initregtables(void)
+{
+    FILE *file = NULL;
+    char line[1024];
+    char *startofline;
+    uint32_t count = 0, linecount;
+    uint32_t lastaddr = 0;
+
+    file = fopen("icao24plus.txt", "r");
+    if(NULL == file) {
+        fprintf(stderr, "failed to open database file 'icao24plus.txt', %s\n", strerror(errno));
+        return;
+    }
+
+    // Count entries, one per line
+    while(fgets(line, sizeof(line), file)) {
+        count++;
+    }
+
+    // Allocate space for all entries
+    allentries = calloc(count, sizeof(struct icaodbentry));
+    if(NULL == allentries) {
+        fprintf(stderr, "Failed to allocate space for db entries\n");
+        return;
+    }
+    linecount = count;
+
+    rewind(file); 
+    count = 0;
+
+    while(fgets(line, sizeof(line), file)) {
+        uint32_t addr;
+        char *addrs = NULL;
+        char *reg = NULL;
+        char *type = NULL;
+        char *extype = NULL;
+
+        // Trim any whitespace off the end of the line
+        while(isspace(line[strlen(line) - 1])) {
+            line[strlen(line) - 1] = '\0';
+        }
+
+        startofline = line;
+        // Trim any whitepsace from front of the line
+        while(strlen(startofline) && isblank(startofline[0])) {
+            startofline++;
+        }
+
+        // anything left?
+        if(strlen(startofline)) {
+
+            // icao address string
+            addrs = startofline;
+            while(strlen(startofline) && (startofline[0] != '\t')) {
+                startofline++;
+            }
+
+            // terminate addrs string
+            if(strlen(startofline)) {
+                startofline[0] = '\0';
+                startofline++;
+            }
+
+            // registration string
+            reg = startofline;
+            while(strlen(startofline) && (startofline[0] != '\t')) {
+                startofline++;
+            }
+
+            // terminate registration string
+            if(strlen(startofline)) {
+                startofline[0] = '\0';
+                startofline++;
+            }
+
+            // type string
+            type = startofline;
+            while(strlen(startofline) && (startofline[0] != '\t')) {
+                startofline++;
+            }
+
+            // terminate type string
+            if(strlen(startofline)) {
+                startofline[0] = '\0';
+                startofline++;
+            }
+
+            // extended type string
+            extype = startofline;
+
+            // no need to terminate extended type string as it's to the end of the main string
+
+            addr = strtoul(addrs, NULL, 16);
+
+            // Sanity check, make sure the ICAO addresses in the TSV file are in order
+            // (it would break bsearch()ing for them if they were not)
+            if(addr < lastaddr) {
+                fprintf(stderr, "icao24plus.txt file not in order after entry %06x (entry %06x)\n", lastaddr, addr);
+                free(allentries);
+                allentries = NULL;
+                return;
+            }
+            lastaddr = addr;
+
+            allentries[count].addr = addr;
+            strncpy(allentries[count].reg, reg, REGSIZE);
+            allentries[count].reg[REGSIZE - 1] = '\0';
+            strncpy(allentries[count].type, type, TYPESIZE);
+            allentries[count].type[TYPESIZE - 1] = '\0';
+            strncpy(allentries[count].extype, extype, EXTYPESIZE);
+            allentries[count].extype[EXTYPESIZE - 1] = '\0';
+
+            count++;
+        }
+    }
+
+    if(count < linecount) {
+        fprintf(stderr, "overallocated space\n");
+    }
+
+    numentries = count;
+
+    fclose(file);
+}
+
+//
+//=========================================================================
+//
+// Comparison function for use with bsearch to enable us to find the entry in
+// the reg/type db with the ICAO id as the key
+//
+int dbcompare(const void *a, const void *b)
+{
+    const struct icaodbentry *aa = (const struct icaodbentry *) a;
+    const struct icaodbentry *bb = (const struct icaodbentry *) b;
+    
+    return aa->addr - bb->addr;
+}
+
+//
+//=========================================================================
+//
+// Lookup the given aircraft (ICAO id) in the reg type db and return
+// entries on it
+//
+// addr, ICAO aircraft id
+// reg, returns pointer to aircraft registration string, or pointer to "" on not found
+// type, returns pointer to aircraft type string, or pointer to "" on not found
+// extype, returns pointer to aircraft extended type string, or pointer to "" on not found
+//
+void
+interactiveRegTypeLookup(uint32_t addr, char **reg, char **type, char **extype)
+{
+    struct icaodbentry *entry = NULL;
+    struct icaodbentry key;
+    
+    // Initialise return values, handles when there is non DB available, or lookup fails
+    *reg = blank;
+    *type = blank;
+    *extype = blank;
+
+    if(allentries != NULL) {
+        key.addr = addr;
+        
+        entry = bsearch(&key, allentries, numentries, sizeof(struct icaodbentry), dbcompare);
+        
+        if(entry) {
+            *reg = entry->reg;
+            *type = entry->type;
+            *extype = entry->extype;
+        }
+    }
+}
+
 //
 //========================= Interactive mode ===============================
 //
@@ -130,6 +323,7 @@ struct stDF *interactiveFindDF(uint32_t addr) {
 //
 struct aircraft *interactiveCreateAircraft(struct modesMessage *mm) {
     struct aircraft *a = (struct aircraft *) malloc(sizeof(*a));
+    char *reg, *type, *extype;
 
     // Default everything to zero/NULL
     memset(a, 0, sizeof(*a));
@@ -139,6 +333,15 @@ struct aircraft *interactiveCreateAircraft(struct modesMessage *mm) {
     a->lat  = a->lon = 0.0;
     memset(a->signalLevel, mm->signalLevel, 8); // First time, initialise everything
                                                 // to the first signal strength
+
+    // lookup Registration and type from ICAO using database
+    interactiveRegTypeLookup(mm->addr, &reg, &type, &extype);
+    strncpy(a->reg, reg, REGSIZE);
+    a->reg[REGSIZE - 1] = '\0';
+    strncpy(a->type, type, TYPESIZE);
+    a->type[TYPESIZE - 1] = '\0';
+    strncpy(a->extype, extype, EXTYPESIZE);
+    a->extype[EXTYPESIZE - 1] = '\0';
 
     // mm->msgtype 32 is used to represent Mode A/C. These values can never change, so 
     // set them once here during initialisation, and don't bother to set them every 

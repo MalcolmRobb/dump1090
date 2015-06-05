@@ -184,6 +184,10 @@
 
 #define MODES_NOTUSED(V) ((void) V)
 
+#define REGSIZE 8
+#define TYPESIZE 8
+#define EXTYPESIZE 32
+
 //======================== structure declarations =========================
 
 // Structure used to describe a networking client
@@ -214,6 +218,11 @@ struct aircraft {
     long          modeAcount;     // Mode A Squawk hit Count
     long          modeCcount;     // Mode C Altitude hit Count
     int           modeACflags;    // Flags for mode A/C recognition
+    
+    // Looked up from icao to registration and type DB
+    char          reg[REGSIZE];       // Aircraf Registration
+    char          type[TYPESIZE];     // Aircraft type (short)
+    char          extype[EXTYPESIZE]; // Aircraft type (long)
 
     // Encoded latitude and longitude as extracted by odd and even CPR encoded messages
     int           odd_cprlat;
@@ -449,6 +458,7 @@ void  interactiveRemoveStaleAircrafts(void);
 int   decodeBinMessage   (struct client *c, char *p);
 struct aircraft *interactiveFindAircraft(uint32_t addr);
 struct stDF     *interactiveFindDF      (uint32_t addr);
+void initregtables(void);
 
 //
 // Functions exported from net_io.c

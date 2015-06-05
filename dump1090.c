@@ -799,6 +799,7 @@ int main(int argc, char **argv) {
 
     // Initialization
     modesInit();
+    initregtables();
 
     if (Modes.net_only) {
         fprintf(stderr,"Net-only mode, no RTL device or file open.\n");

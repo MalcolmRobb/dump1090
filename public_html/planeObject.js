@@ -34,7 +34,12 @@ var planeObject = {
 	// When was this last updated?
 	updated		: null,
 	reapable	: false,
-
+	
+	// ICAO to registration look up data
+	reg			: null,
+	type		: null,
+	extype      : null,
+	
 	// Appends data to the running track so we can get a visual tail on the plane
 	// Only useful for a long running browser session.
 	funcAddToTrack	: function(){
@@ -144,6 +149,9 @@ var planeObject = {
 			this.latitude	= data.lat;
 			this.longitude	= data.lon;
 			this.flight	= data.flight;
+			this.reg	= data.reg;
+			this.type	= data.type;
+			this.extype	= data.extype;
 			this.squawk	= data.squawk;
 			this.icao	= data.hex;
 			this.messages	= data.messages;
