@@ -665,9 +665,9 @@ char *aircraftsToJson(int *len) {
         l = snprintf(p,buflen,
             "{\"hex\":\"%06x\", \"squawk\":\"%04x\", \"flight\":\"%s\", \"lat\":%f, "
             "\"lon\":%f, \"validposition\":%d, \"altitude\":%d,  \"vert_rate\":%d,\"track\":%d, \"validtrack\":%d,"
-            "\"speed\":%d, \"messages\":%ld, \"seen\":%d},\n",
+            "\"speed\":%d, \"messages\":%ld, \"seen\":%d, \"reg\":\"%s\", \"type\":\"%s\", \"extype\":\"%s\"},\n",
             a->addr, a->modeA, a->flight, a->lat, a->lon, position, a->altitude, a->vert_rate, a->track, track,
-            a->speed, a->messages, (int)(now - a->seen));
+            a->speed, a->messages, (int)(now - a->seen), a->reg, a->type, a->extype);
         p += l; buflen -= l;
         
         //Resize if needed

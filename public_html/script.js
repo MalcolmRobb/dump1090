@@ -308,6 +308,24 @@ function refreshSelected() {
         html += '<td>ICAO (hex): n/a</td></tr>'; // Something is wrong if we are here
     }
     
+    if (selected) {
+        html += '<tr><td>Registration: ' + selected.reg + '</td>';
+    } else {
+        html += '<tr><td>Registration: n/a</td>';
+    }
+
+    if (selected) {
+        html += '<td>Type: ' + selected.type + '</td></tr>';
+    } else {
+        html += '<td>Type: n/a</td></tr>';
+    }
+    if (selected) {
+        html += '<tr><td>Extended Type: ' + selected.extype + '</td></tr>';
+    } else {
+        html += '<tr><td>Extended Type: n/a</td></tr>';
+    }
+
+    
     html += '<tr><td>Track: ' 
 	if (selected && selected.vTrack) {
 	    html += selected.track + '&deg;' + ' (' + normalizeTrack(selected.track, selected.vTrack)[1] +')';
@@ -398,7 +416,9 @@ function refreshTableInfo() {
 	var html = '<table id="tableinfo" width="100%">';
 	html += '<thead style="background-color: #BBBBBB; cursor: pointer;">';
 	html += '<td onclick="setASC_DESC(\'0\');sortTable(\'tableinfo\',\'0\');">ICAO</td>';
+	html += '<td>Reg</td>';
 	html += '<td onclick="setASC_DESC(\'1\');sortTable(\'tableinfo\',\'1\');">Flight</td>';
+	html += '<td>Type</td>';
 	html += '<td onclick="setASC_DESC(\'2\');sortTable(\'tableinfo\',\'2\');" ' +
 	    'align="right">Squawk</td>';
 	html += '<td onclick="setASC_DESC(\'3\');sortTable(\'tableinfo\',\'3\');" ' +
@@ -444,7 +464,9 @@ function refreshTableInfo() {
 		    }
 		    
 			html += '<td>' + tableplane.icao + '</td>';
+			html += '<td>' + tableplane.reg + '</td>';
 			html += '<td>' + tableplane.flight + '</td>';
+			html += '<td>' + tableplane.type + '</td>';
 			if (tableplane.squawk != '0000' ) {
     			html += '<td align="right">' + tableplane.squawk + '</td>';
     	    } else {
