@@ -47,10 +47,10 @@
 // Networking "stack" initialization
 //
 struct service {
-	char *descr;
-	int *socket;
-	int port;
-	int enabled;
+    char *descr;
+    int *socket;
+    int port;
+    int enabled;
 };
 
 struct service services[MODES_NET_SERVICES_NUM];
@@ -58,16 +58,16 @@ struct service services[MODES_NET_SERVICES_NUM];
 void modesInitNet(void) {
     int j;
 
-	struct service svc[MODES_NET_SERVICES_NUM] = {
-		{"Raw TCP output", &Modes.ros, Modes.net_output_raw_port, 1},
-		{"Raw TCP input", &Modes.ris, Modes.net_input_raw_port, 1},
-		{"Beast TCP output", &Modes.bos, Modes.net_output_beast_port, 1},
-		{"Beast TCP input", &Modes.bis, Modes.net_input_beast_port, 1},
-		{"HTTP server", &Modes.https, Modes.net_http_port, 1},
-		{"Basestation TCP output", &Modes.sbsos, Modes.net_output_sbs_port, 1}
-	};
+    struct service svc[MODES_NET_SERVICES_NUM] = {
+        {"Raw TCP output", &Modes.ros, Modes.net_output_raw_port, 1},
+        {"Raw TCP input", &Modes.ris, Modes.net_input_raw_port, 1},
+        {"Beast TCP output", &Modes.bos, Modes.net_output_beast_port, 1},
+        {"Beast TCP input", &Modes.bis, Modes.net_input_beast_port, 1},
+        {"HTTP server", &Modes.https, Modes.net_http_port, 1},
+        {"Basestation TCP output", &Modes.sbsos, Modes.net_output_sbs_port, 1}
+    };
 
-	memcpy(&services, &svc, sizeof(svc));//services = svc;
+    memcpy(&services, &svc, sizeof(svc));//services = svc;
 
     Modes.clients = NULL;
 
@@ -83,19 +83,19 @@ void modesInitNet(void) {
 #endif
 
     for (j = 0; j < MODES_NET_SERVICES_NUM; j++) {
-		services[j].enabled = (services[j].port != 0);
-		if (services[j].enabled) {
-			int s = anetTcpServer(Modes.aneterr, services[j].port, Modes.net_bind_address);
-			if (s == -1) {
-				fprintf(stderr, "Error opening the listening port %d (%s): %s\n",
-					services[j].port, services[j].descr, Modes.aneterr);
-				exit(1);
-			}
-			anetNonBlock(Modes.aneterr, s);
-			*services[j].socket = s;
-		} else {
-			if (Modes.debug & MODES_DEBUG_NET) printf("%s port is disabled\n", services[j].descr);
-		}
+        services[j].enabled = (services[j].port != 0);
+        if (services[j].enabled) {
+            int s = anetTcpServer(Modes.aneterr, services[j].port, Modes.net_bind_address);
+            if (s == -1) {
+                fprintf(stderr, "Error opening the listening port %d (%s): %s\n",
+                    services[j].port, services[j].descr, Modes.aneterr);
+                exit(1);
+            }
+            anetNonBlock(Modes.aneterr, s);
+            *services[j].socket = s;
+        } else {
+            if (Modes.debug & MODES_DEBUG_NET) printf("%s port is disabled\n", services[j].descr);
+        }
     }
 
 #ifndef _WIN32
@@ -114,28 +114,28 @@ struct client * modesAcceptClients(void) {
     struct client *c;
 
     for (j = 0; j < MODES_NET_SERVICES_NUM; j++) {
-		if (services[j].enabled) {
-			fd = anetTcpAccept(Modes.aneterr, *services[j].socket, NULL, &port);
-			if (fd == -1) continue;
+        if (services[j].enabled) {
+            fd = anetTcpAccept(Modes.aneterr, *services[j].socket, NULL, &port);
+            if (fd == -1) continue;
 
-			anetNonBlock(Modes.aneterr, fd);
-			c = (struct client *) malloc(sizeof(*c));
-			c->service    = *services[j].socket;
-			c->next       = Modes.clients;
-			c->fd         = fd;
-			c->buflen     = 0;
-			Modes.clients = c;
-			anetSetSendBuffer(Modes.aneterr,fd, (MODES_NET_SNDBUF_SIZE << Modes.net_sndbuf_size));
+            anetNonBlock(Modes.aneterr, fd);
+            c = (struct client *) malloc(sizeof(*c));
+            c->service    = *services[j].socket;
+            c->next       = Modes.clients;
+            c->fd         = fd;
+            c->buflen     = 0;
+            Modes.clients = c;
+            anetSetSendBuffer(Modes.aneterr,fd, (MODES_NET_SNDBUF_SIZE << Modes.net_sndbuf_size));
 
-			if (*services[j].socket == Modes.sbsos) Modes.stat_sbs_connections++;
-			if (*services[j].socket == Modes.ros)   Modes.stat_raw_connections++;
-			if (*services[j].socket == Modes.bos)   Modes.stat_beast_connections++;
+            if (*services[j].socket == Modes.sbsos) Modes.stat_sbs_connections++;
+            if (*services[j].socket == Modes.ros)   Modes.stat_raw_connections++;
+            if (*services[j].socket == Modes.bos)   Modes.stat_beast_connections++;
 
-			j--; // Try again with the same listening port
+            j--; // Try again with the same listening port
 
-			if (Modes.debug & MODES_DEBUG_NET)
-				printf("Created new client %d\n", fd);
-		}
+            if (Modes.debug & MODES_DEBUG_NET)
+                printf("Created new client %d\n", fd);
+        }
     }
     return Modes.clients;
 }
@@ -169,7 +169,7 @@ void modesFreeClient(struct client *c) {
 // Close the client connection and mark it as closed
 //
 void modesCloseClient(struct client *c) {
-	close(c->fd);
+    close(c->fd);
     if (c->service == Modes.sbsos) {
         if (Modes.stat_sbs_connections) Modes.stat_sbs_connections--;
     } else if (c->service == Modes.ros) {
@@ -697,6 +697,43 @@ char *aircraftsToJson(int *len) {
 //
 //=========================================================================
 //
+
+//
+//=========================================================================
+//
+// Return a home location using the home string if set, or lat/long
+//
+char *locationToJson(int *len) {
+    unsigned int buflen = 1024; // The initial buffer is incremented as needed
+    char *buf = (char *) malloc(buflen), *p = buf;
+    int l;
+
+    if (Modes.home != NULL) {
+        // Prevent buffer overrun by making it Modes.home length
+        // plus 1024 (because we sure aren't going to use that
+        // much around it, so we're nice and safe).
+        if ( buflen < strlen( Modes.home ) ) {
+            buflen += strlen( Modes.home );
+            buf = (char *) realloc(buf, buflen);
+        }
+        l = snprintf( p, buflen, "{\"home\":\"%s\"}\n", Modes.home );
+    } else if (Modes.fUserLat || Modes.fUserLon) {
+        l = snprintf(
+            p, buflen,
+            "{\"lat\":%f, \"lon\":%f}\n",
+            Modes.fUserLat, Modes.fUserLon
+        );
+    } else {
+        l = snprintf( p, buflen, "{}\n" );
+    }
+    p += l; buflen -= l;
+        
+    *len = p-buf;
+    return buf;
+}
+//
+//=========================================================================
+//
 #define MODES_CONTENT_TYPE_HTML "text/html;charset=utf-8"
 #define MODES_CONTENT_TYPE_CSS  "text/css;charset=utf-8"
 #define MODES_CONTENT_TYPE_JSON "application/json;charset=utf-8"
@@ -759,6 +796,9 @@ int handleHTTPRequest(struct client *c, char *p) {
         statuscode = 200;
         content = aircraftsToJson(&clen);
         //snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JSON);
+    } else if (strstr(url, "/loc.json")) {
+        statuscode = 200;
+        content = locationToJson(&clen);
     } else {
         struct stat sbuf;
         int fd = -1;
@@ -880,9 +920,9 @@ void modesReadFromClient(struct client *c, char *sep,
         if (nread < 0) {errno = WSAGetLastError();}
 #endif
         if (nread == 0) {
-			modesCloseClient(c);
-			return;
-		}
+            modesCloseClient(c);
+            return;
+        }
 
         // If we didn't get all the data we asked for, then return once we've processed what we did get.
         if (nread != left) {

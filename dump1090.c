@@ -422,6 +422,7 @@ void showHelp(void) {
 "--net-buffer <n>         TCP buffer size 64Kb * (2^n) (default: n=0, 64Kb)\n"
 "--lat <latitude>         Reference/receiver latitude for surface posn (opt)\n"
 "--lon <longitude>        Reference/receiver longitude for surface posn (opt)\n"
+"--home <string>          Google Maps Search String for setting map \"home\" (opt, overrides lat/long in map)\n"
 "--fix                    Enable single-bits error correction using CRC\n"
 "--no-fix                 Disable single-bits error correction using CRC\n"
 "--no-crc-check           Disable messages with broken CRC (discouraged)\n"
@@ -600,62 +601,62 @@ void backgroundTasks(void) {
 //
 int verbose_device_search(char *s)
 {
-	int i, device_count, device, offset;
-	char *s2;
-	char vendor[256], product[256], serial[256];
-	device_count = rtlsdr_get_device_count();
-	if (!device_count) {
-		fprintf(stderr, "No supported devices found.\n");
-		return -1;
-	}
-	fprintf(stderr, "Found %d device(s):\n", device_count);
-	for (i = 0; i < device_count; i++) {
-		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-		fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
-	}
-	fprintf(stderr, "\n");
-	/* does string look like raw id number */
-	device = (int)strtol(s, &s2, 0);
-	if (s2[0] == '\0' && device >= 0 && device < device_count) {
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rtlsdr_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string exact match a serial */
-	for (i = 0; i < device_count; i++) {
-		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-		if (strcmp(s, serial) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rtlsdr_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string prefix match a serial */
-	for (i = 0; i < device_count; i++) {
-		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-		if (strncmp(s, serial, strlen(s)) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rtlsdr_get_device_name((uint32_t)device));
-		return device;
-	}
-	/* does string suffix match a serial */
-	for (i = 0; i < device_count; i++) {
-		rtlsdr_get_device_usb_strings(i, vendor, product, serial);
-		offset = strlen(serial) - strlen(s);
-		if (offset < 0) {
-			continue;}
-		if (strncmp(s, serial+offset, strlen(s)) != 0) {
-			continue;}
-		device = i;
-		fprintf(stderr, "Using device %d: %s\n",
-			device, rtlsdr_get_device_name((uint32_t)device));
-		return device;
-	}
-	fprintf(stderr, "No matching devices found.\n");
-	return -1;
+    int i, device_count, device, offset;
+    char *s2;
+    char vendor[256], product[256], serial[256];
+    device_count = rtlsdr_get_device_count();
+    if (!device_count) {
+        fprintf(stderr, "No supported devices found.\n");
+        return -1;
+    }
+    fprintf(stderr, "Found %d device(s):\n", device_count);
+    for (i = 0; i < device_count; i++) {
+        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+        fprintf(stderr, "  %d:  %s, %s, SN: %s\n", i, vendor, product, serial);
+    }
+    fprintf(stderr, "\n");
+    /* does string look like raw id number */
+    device = (int)strtol(s, &s2, 0);
+    if (s2[0] == '\0' && device >= 0 && device < device_count) {
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rtlsdr_get_device_name((uint32_t)device));
+        return device;
+    }
+    /* does string exact match a serial */
+    for (i = 0; i < device_count; i++) {
+        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+        if (strcmp(s, serial) != 0) {
+            continue;}
+        device = i;
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rtlsdr_get_device_name((uint32_t)device));
+        return device;
+    }
+    /* does string prefix match a serial */
+    for (i = 0; i < device_count; i++) {
+        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+        if (strncmp(s, serial, strlen(s)) != 0) {
+            continue;}
+        device = i;
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rtlsdr_get_device_name((uint32_t)device));
+        return device;
+    }
+    /* does string suffix match a serial */
+    for (i = 0; i < device_count; i++) {
+        rtlsdr_get_device_usb_strings(i, vendor, product, serial);
+        offset = strlen(serial) - strlen(s);
+        if (offset < 0) {
+            continue;}
+        if (strncmp(s, serial+offset, strlen(s)) != 0) {
+            continue;}
+        device = i;
+        fprintf(stderr, "Using device %d: %s\n",
+            device, rtlsdr_get_device_name((uint32_t)device));
+        return device;
+    }
+    fprintf(stderr, "No matching devices found.\n");
+    return -1;
 }
 //
 //=========================================================================
@@ -741,6 +742,8 @@ int main(int argc, char **argv) {
             Modes.fUserLat = atof(argv[++j]);
         } else if (!strcmp(argv[j],"--lon") && more) {
             Modes.fUserLon = atof(argv[++j]);
+        } else if (!strcmp(argv[j],"--home") && more) {
+            Modes.home = strdup(argv[++j]);
         } else if (!strcmp(argv[j],"--debug") && more) {
             char *f = argv[++j];
             while(*f) {
