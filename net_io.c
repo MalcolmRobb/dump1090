@@ -755,6 +755,7 @@ int handleHTTPRequest(struct client *c, char *p) {
     char ctype[48];
     char getFile[1024];
     char *ext;
+	char *web_home;
 
     if (Modes.debug & MODES_DEBUG_NET)
         printf("\nHTTP request: %s\n", c->buf);
@@ -783,11 +784,17 @@ int handleHTTPRequest(struct client *c, char *p) {
         printf("HTTP requested URL: %s\n\n", url);
     }
     
-    if (strlen(url) < 2) {
-        snprintf(getFile, sizeof getFile, "%s/gmap.html", HTMLPATH); // Default file
-    } else {
-        snprintf(getFile, sizeof getFile, "%s/%s", HTMLPATH, url);
-    }
+	web_home = getenv( "DUMP1090_WEB" );
+	if ( !web_home ) {
+		web_home = HTMLPATH;
+	}
+	snprintf(
+		getFile,
+		sizeof getFile,
+		"%s/%s",
+		web_home,
+		(strlen(url) < 2 ? "gmap.html" : url )
+	); // Use default file if no valid url
 
     // Select the content to send, we have just two so far:
     // "/" -> Our google map application.
@@ -805,8 +812,8 @@ int handleHTTPRequest(struct client *c, char *p) {
         char *rp, *hrp;
 
         rp = realpath(getFile, NULL);
-        hrp = realpath(HTMLPATH, NULL);
-        hrp = (hrp ? hrp : HTMLPATH);
+        hrp = realpath(web_home, NULL);
+        hrp = (hrp ? hrp : web_home);
         clen = -1;
         content = strdup("Server error occured");
         if (rp && (!strncmp(hrp, rp, strlen(hrp)))) {

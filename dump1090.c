@@ -448,6 +448,13 @@ void showHelp(void) {
 "                  p = Log frames with bad preamble\n"
 "                  n = Log network debugging info\n"
 "                  j = Log frames to frames.js, loadable by debug.html\n"
+"\n"
+"When running in --net mode, dump1090 will look for './public_html' by default\n"
+"to serve supporting files. This can be overridden with an environment setting\n"
+"of DUMP1090_WEB (e.g., \"DUMP1090_WEB=/path/to/the/dump1090/public_html\" - no\n"
+"trailing slash should be used).  Once set, the binary can be run from any path\n"
+"and it will be able to serve up the content correctly.\n"
+"\n"
     );
 }
 
