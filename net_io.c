@@ -411,7 +411,7 @@ void modesSendSBSOutput(struct modesMessage *mm) {
     else                                           {p += sprintf(p, ",");}
 
     // Field 18 is  the Squawk (if we have it)
-    if (mm->bFlags & MODES_ACFLAGS_SQUAWK_VALID) {p += sprintf(p, ",%x", mm->modeA);}
+    if (mm->bFlags & MODES_ACFLAGS_SQUAWK_VALID) {p += sprintf(p, ",%04x", mm->modeA);}
     else                                         {p += sprintf(p, ",");}
 
     // Field 19 is the Squawk Changing Alert flag (if we have it)
