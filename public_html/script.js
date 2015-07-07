@@ -634,9 +634,7 @@ function sortTable(szTableID,iCol) {
 	aStore=null;
 }
 
-var lastSelected = 0;
 function selectPlaneByHex(hex) {
-if ( LastData && lastSelected == LastData) { console.log( LastData + ':' + arguments.callee.name ); } lastSelected = LastData;
 	// If SelectedPlane has something in it, clear out the selected
 	if (SelectedPlane != null) {
 		Planes[SelectedPlane].is_selected = false;
