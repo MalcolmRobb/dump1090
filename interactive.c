@@ -413,7 +413,7 @@ void interactiveShowData(void) {
     time_t now = time(NULL);
     int count = 0;
     char progress;
-    char spinner[4] = "|/-\\";
+    char spinner[5] = "|/-\\";
 
     // Refresh screen every (MODES_INTERACTIVE_REFRESH_TIME) miliseconde
     if ((mstime() - Modes.interactive_last_update) < MODES_INTERACTIVE_REFRESH_TIME)
