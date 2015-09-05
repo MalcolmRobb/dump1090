@@ -1,0 +1,12 @@
+## TEMPLATE FILE - This is used to create /etc/cron.d/dump1090-mutability ##
+## The first three lines will be discarded                                ##
+
+# Checks for updates to the VRS aircraft database once a day at around 5am;
+# when an update is available, downloads it and regenerates the JSON data
+# used by the webmap.
+
+# NB: the minute value below is randomly generated on install, to avoid 
+# all installs hitting the server at the same time.
+
+# m h dom mon dow user command
+@MIN@ 5 * * *  @USER@  test -x /usr/share/dump1090-mutability/update-aircraft-database.sh && /usr/share/dump1090-mutability/update-aircraft-database.sh --log-to-file

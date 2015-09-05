@@ -1,0 +1,21 @@
+Source: dump1090-mutability
+Section: embedded
+Priority: extra
+Maintainer: Oliver Jowett <oliver@mutability.co.uk>
+Build-Depends: debhelper(>=8), librtlsdr-dev, libusb-1.0-0-dev, pkg-config
+Standards-Version: 3.9.3
+Homepage: https://github.com/mutability/dump1090
+Vcs-Git: https://github.com/mutability/dump1090.git
+
+Package: dump1090-mutability
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
+Recommends: python(>=2.5), cron | cron-daemon, curl
+Suggests: lighttpd
+Provides: fatsv-data-source
+Description: ADS-B Ground Station System for RTL-SDR
+ Networked Aviation Mode S / ADS-B decoder/translator with RTL-SDR software
+ defined radio USB device support.
+ .
+ This is a packaging of the "mutability" fork of dump1090 that includes
+ sampling at 2.4MHz and other improvements.

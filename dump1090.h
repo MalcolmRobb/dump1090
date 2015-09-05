@@ -1,43 +1,63 @@
-// dump1090, a Mode S messages decoder for RTLSDR devices.
+// Part of dump1090, a Mode S message decoder for RTLSDR devices.
 //
-// Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
+// dump1090.h: main program header
 //
-// All rights reserved.
+// Copyright (c) 2014,2015 Oliver Jowett <oliver@mutability.co.uk>
 //
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
+// This file is free software: you may copy, redistribute and/or modify it  
+// under the terms of the GNU General Public License as published by the
+// Free Software Foundation, either version 2 of the License, or (at your  
+// option) any later version.  
 //
-//  *  Redistributions of source code must retain the above copyright
-//     notice, this list of conditions and the following disclaimer.
+// This file is distributed in the hope that it will be useful, but  
+// WITHOUT ANY WARRANTY; without even the implied warranty of  
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU  
+// General Public License for more details.
 //
-//  *  Redistributions in binary form must reproduce the above copyright
-//     notice, this list of conditions and the following disclaimer in the
-//     documentation and/or other materials provided with the distribution.
+// You should have received a copy of the GNU General Public License  
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+// This file incorporates work covered by the following copyright and  
+// permission notice:
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//   Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>
 //
+//   All rights reserved.
+//
+//   Redistribution and use in source and binary forms, with or without
+//   modification, are permitted provided that the following conditions are
+//   met:
+//
+//    *  Redistributions of source code must retain the above copyright
+//       notice, this list of conditions and the following disclaimer.
+//
+//    *  Redistributions in binary form must reproduce the above copyright
+//       notice, this list of conditions and the following disclaimer in the
+//       documentation and/or other materials provided with the distribution.
+//
+//   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+//   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+//   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+//   A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+//   HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+//   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+//   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+//   DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+//   THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+//   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+//   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 #ifndef __DUMP1090_H
 #define __DUMP1090_H
 
-// File Version number
-// ====================
-// Format is : MajorVer.MinorVer.DayMonth.Year"
-// MajorVer changes only with significant changes
-// MinorVer changes when additional features are added, but not for bug fixes (range 00-99)
-// DayDate & Year changes for all changes, including for bug fixes. It represent the release date of the update
-//
-#define MODES_DUMP1090_VERSION     "1.10.3010.14"
+// Default version number, if not overriden by the Makefile
+#ifndef MODES_DUMP1090_VERSION
+# define MODES_DUMP1090_VERSION     "v1.13-custom"
+#endif
+
+#ifndef MODES_DUMP1090_VARIANT
+# define MODES_DUMP1090_VARIANT     "dump1090-mutability"
+#endif
 
 // ============================= Include files ==========================
 
@@ -51,48 +71,38 @@
     #include <unistd.h>
     #include <math.h>
     #include <sys/time.h>
-    #include <sys/timeb.h>
     #include <signal.h>
     #include <fcntl.h>
     #include <ctype.h>
     #include <sys/stat.h>
     #include <sys/ioctl.h>
-    #include "rtl-sdr.h"
-    #include "anet.h"
+    #include <time.h>
+    #include <limits.h>
 #else
     #include "winstubs.h" //Put everything Windows specific in here
-    #include "rtl-sdr.h"
-    #include "anet.h"
 #endif
 
+// Avoid a dependency on rtl-sdr except where it's really needed.
+typedef struct rtlsdr_dev rtlsdr_dev_t;
+
 // ============================= #defines ===============================
-//
-// If you have a valid coaa.h, these values will come from it. If not,
-// then you can enter your own values in the #else section here
-//
-#ifdef USER_LATITUDE
-    #define MODES_USER_LATITUDE_DFLT   (USER_LATITUDE)
-    #define MODES_USER_LONGITUDE_DFLT  (USER_LONGITUDE)
-#else
-    #define MODES_USER_LATITUDE_DFLT   (0.0)
-    #define MODES_USER_LONGITUDE_DFLT  (0.0)
-#endif
 
 #define MODES_DEFAULT_PPM          52
 #define MODES_DEFAULT_RATE         2000000
+#define MODES_OVERSAMPLE_RATE      2400000
 #define MODES_DEFAULT_FREQ         1090000000
 #define MODES_DEFAULT_WIDTH        1000
 #define MODES_DEFAULT_HEIGHT       700
-#define MODES_ASYNC_BUF_NUMBER     16
-#define MODES_ASYNC_BUF_SIZE       (16*16384)                 // 256k
-#define MODES_ASYNC_BUF_SAMPLES    (MODES_ASYNC_BUF_SIZE / 2) // Each sample is 2 bytes
+#define MODES_RTL_BUFFERS          15                         // Number of RTL buffers
+#define MODES_RTL_BUF_SIZE         (16*16384)                 // 256k
+#define MODES_MAG_BUF_SAMPLES      (MODES_RTL_BUF_SIZE / 2)   // Each sample is 2 bytes
+#define MODES_MAG_BUFFERS          12                         // Number of magnitude buffers (should be smaller than RTL_BUFFERS for flowcontrol to work)
 #define MODES_AUTO_GAIN            -100                       // Use automatic gain
 #define MODES_MAX_GAIN             999999                     // Use max available gain
-#define MODES_MSG_SQUELCH_LEVEL    0x02FF                     // Average signal strength limit
+#define MODES_MSG_SQUELCH_DB       4.0                        // Minimum SNR, in dB
 #define MODES_MSG_ENCODER_ERRS     3                          // Maximum number of encoding errors
 
-// When changing, change also fixBitErrors() and modesInitErrorTable() !!
-#define MODES_MAX_BITERRORS        2                          // Global max for fixable bit erros
+#define MODES_MAX_PHASE_STATS      10
 
 #define MODEAC_MSG_SAMPLES       (25 * 2)                     // include up to the SPI bit
 #define MODEAC_MSG_BYTES          2
@@ -116,12 +126,17 @@
 #define MODES_LONG_MSG_SIZE     (MODES_LONG_MSG_SAMPLES  * sizeof(uint16_t))
 #define MODES_SHORT_MSG_SIZE    (MODES_SHORT_MSG_SAMPLES * sizeof(uint16_t))
 
-#define MODES_RAWOUT_BUF_SIZE   (1500)
-#define MODES_RAWOUT_BUF_FLUSH  (MODES_RAWOUT_BUF_SIZE - 200)
-#define MODES_RAWOUT_BUF_RATE   (1000)            // 1000 * 64mS = 1 Min approx
+#define MODES_OS_PREAMBLE_SAMPLES  (20)
+#define MODES_OS_PREAMBLE_SIZE     (MODES_OS_PREAMBLE_SAMPLES  * sizeof(uint16_t))
+#define MODES_OS_LONG_MSG_SAMPLES  (268)
+#define MODES_OS_SHORT_MSG_SAMPLES (135)
+#define MODES_OS_LONG_MSG_SIZE     (MODES_LONG_MSG_SAMPLES  * sizeof(uint16_t))
+#define MODES_OS_SHORT_MSG_SIZE    (MODES_SHORT_MSG_SAMPLES * sizeof(uint16_t))
 
-#define MODES_ICAO_CACHE_LEN 1024 // Power of two required
-#define MODES_ICAO_CACHE_TTL 60   // Time to live of cached addresses
+#define MODES_OUT_BUF_SIZE         (1500)
+#define MODES_OUT_FLUSH_SIZE       (MODES_OUT_BUF_SIZE - 256)
+#define MODES_OUT_FLUSH_INTERVAL   (60000)
+
 #define MODES_UNIT_FEET 0
 #define MODES_UNIT_METERS 1
 
@@ -143,10 +158,15 @@
 #define MODES_ACFLAGS_FS_VALID       (1<<13) // Aircraft Flight Status is known
 #define MODES_ACFLAGS_NSEWSPD_VALID  (1<<14) // Aircraft EW and NS Speed is known
 #define MODES_ACFLAGS_LATLON_REL_OK  (1<<15) // Indicates it's OK to do a relative CPR
+#define MODES_ACFLAGS_REL_CPR_USED   (1<<16) // Lat/lon derived from relative CPR
+#define MODES_ACFLAGS_CATEGORY_VALID (1<<17) // Aircraft category is known
+#define MODES_ACFLAGS_FROM_MLAT      (1<<18) // Data was derived from multilateration
 
 #define MODES_ACFLAGS_LLEITHER_VALID (MODES_ACFLAGS_LLEVEN_VALID | MODES_ACFLAGS_LLODD_VALID)
 #define MODES_ACFLAGS_LLBOTH_VALID   (MODES_ACFLAGS_LLEVEN_VALID | MODES_ACFLAGS_LLODD_VALID)
 #define MODES_ACFLAGS_AOG_GROUND     (MODES_ACFLAGS_AOG_VALID    | MODES_ACFLAGS_AOG)
+
+#define MODES_NON_ICAO_ADDRESS       (1<<24) // Set on addresses to indicate they are not ICAO addresses
 
 #define MODES_DEBUG_DEMOD (1<<0)
 #define MODES_DEBUG_DEMODERR (1<<1)
@@ -162,18 +182,18 @@
 
 #define MODES_INTERACTIVE_REFRESH_TIME 250      // Milliseconds
 #define MODES_INTERACTIVE_ROWS          22      // Rows on screen
-#define MODES_INTERACTIVE_DELETE_TTL   300      // Delete from the list after 300 seconds
-#define MODES_INTERACTIVE_DISPLAY_TTL   60      // Delete from display after 60 seconds
+#define MODES_INTERACTIVE_DISPLAY_TTL 60000     // Delete from display after 60 seconds
 
-#define MODES_NET_HEARTBEAT_RATE       900      // Each block is approx 65mS - default is > 1 min
+#define MODES_NET_HEARTBEAT_INTERVAL 60000      // milliseconds
 
-#define MODES_NET_SERVICES_NUM          6
+#define MODES_NET_SERVICES_NUM          7
 #define MODES_NET_INPUT_RAW_PORT    30001
 #define MODES_NET_OUTPUT_RAW_PORT   30002
 #define MODES_NET_OUTPUT_SBS_PORT   30003
 #define MODES_NET_INPUT_BEAST_PORT  30004
 #define MODES_NET_OUTPUT_BEAST_PORT 30005
 #define MODES_NET_HTTP_PORT          8080
+#define MODES_NET_OUTPUT_FA_TSV_PORT 10001
 #define MODES_CLIENT_BUF_SIZE  1024
 #define MODES_NET_SNDBUF_SIZE (1024*64)
 #define MODES_NET_SNDBUF_MAX  (7)
@@ -182,60 +202,38 @@
 #define HTMLPATH   "./public_html"      // default path for gmap.html etc
 #endif
 
+#define HISTORY_SIZE 120
+#define HISTORY_INTERVAL 30000
+
 #define MODES_NOTUSED(V) ((void) V)
+
+#define MAX_AMPLITUDE 65535.0
+#define MAX_POWER (MAX_AMPLITUDE * MAX_AMPLITUDE)
+
+// Include subheaders after all the #defines are in place
+
+#include "util.h"
+#include "anet.h"
+#include "net_io.h"
+#include "crc.h"
+#include "demod_2000.h"
+#include "demod_2400.h"
+#include "stats.h"
+#include "cpr.h"
+#include "icao_filter.h"
+#include "convert.h"
 
 //======================== structure declarations =========================
 
-// Structure used to describe a networking client
-struct client {
-    struct client*  next;                // Pointer to next client
-    int    fd;                           // File descriptor
-    int    service;                      // TCP port the client is connected to
-    int    buflen;                       // Amount of data on buffer
-    char   buf[MODES_CLIENT_BUF_SIZE+1]; // Read buffer
+// Structure representing one magnitude buffer
+struct mag_buf {
+    uint16_t       *data;            // Magnitude data. Starts with Modes.trailing_samples worth of overlap from the previous block
+    unsigned        length;          // Number of valid samples _after_ overlap. Total buffer length is buf->length + Modes.trailing_samples.
+    uint64_t        sampleTimestamp; // Clock timestamp of the start of this block, 12MHz clock
+    struct timespec sysTimestamp;    // Estimated system time at start of block
+    uint32_t        dropped;         // Number of dropped samples preceding this buffer
+    double          total_power;     // Sum of per-sample input power (in the range [0.0,1.0] per sample), or 0 if not measured
 };
-
-// Structure used to describe an aircraft in iteractive mode
-struct aircraft {
-    uint32_t      addr;           // ICAO address
-    char          flight[16];     // Flight number
-    unsigned char signalLevel[8]; // Last 8 Signal Amplitudes
-    int           altitude;       // Altitude
-    int           speed;          // Velocity
-    int           track;          // Angle of flight
-    int           vert_rate;      // Vertical rate.
-    time_t        seen;           // Time at which the last packet was received
-    time_t        seenLatLon;     // Time at which the last lat long was calculated
-    uint64_t      timestamp;      // Timestamp at which the last packet was received
-    uint64_t      timestampLatLon;// Timestamp at which the last lat long was calculated
-    long          messages;       // Number of Mode S messages received
-    int           modeA;          // Squawk
-    int           modeC;          // Altitude
-    long          modeAcount;     // Mode A Squawk hit Count
-    long          modeCcount;     // Mode C Altitude hit Count
-    int           modeACflags;    // Flags for mode A/C recognition
-
-    // Encoded latitude and longitude as extracted by odd and even CPR encoded messages
-    int           odd_cprlat;
-    int           odd_cprlon;
-    int           even_cprlat;
-    int           even_cprlon;
-    uint64_t      odd_cprtime;
-    uint64_t      even_cprtime;
-    double        lat, lon;       // Coordinated obtained from CPR encoded data
-    int           bFlags;         // Flags related to valid fields in this structure
-    struct aircraft *next;        // Next aircraft in our linked list
-};
-
-struct stDF {
-    struct stDF     *pNext;                      // Pointer to next item in the linked list
-    struct stDF     *pPrev;                      // Pointer to previous item in the linked list
-    struct aircraft *pAircraft;                  // Pointer to the Aircraft structure for this DF
-    time_t           seen;                       // Dos/UNIX Time at which the this packet was received
-    uint64_t         llTimestamp;                // Timestamp at which the this packet was received
-    uint32_t         addr;                       // Timestamp at which the this packet was received
-    unsigned char    msg[MODES_LONG_MSG_BYTES];  // the binary
-} tDF;
 
 // Program global state
 struct {                             // Internal state
@@ -243,24 +241,29 @@ struct {                             // Internal state
 
     pthread_mutex_t data_mutex;      // Mutex to synchronize buffer access
     pthread_cond_t  data_cond;       // Conditional variable associated
-    uint16_t       *pData          [MODES_ASYNC_BUF_NUMBER]; // Raw IQ sample buffers from RTL
-    struct timeb    stSystemTimeRTL[MODES_ASYNC_BUF_NUMBER]; // System time when RTL passed us this block
-    int             iDataIn;         // Fifo input pointer
-    int             iDataOut;        // Fifo output pointer
-    int             iDataReady;      // Fifo content count
-    int             iDataLost;       // Count of missed buffers
 
-    uint16_t       *pFileData;       // Raw IQ samples buffer (from a File)
-    uint16_t       *magnitude;       // Magnitude vector
-    uint64_t        timestampBlk;    // Timestamp of the start of the current block
-    struct timeb    stSystemTimeBlk; // System time when RTL passed us currently processing this block
+    struct mag_buf  mag_buffers[MODES_MAG_BUFFERS];       // Converted magnitude buffers from RTL or file input
+    unsigned        first_free_buffer;                    // Entry in mag_buffers that will next be filled with input.
+    unsigned        first_filled_buffer;                  // Entry in mag_buffers that has valid data and will be demodulated next. If equal to next_free_buffer, there is no unprocessed data.
+    struct timespec reader_cpu_accumulator;               // CPU time used by the reader thread, copied out and reset by the main thread under the mutex
+
+    unsigned        trailing_samples;                     // extra trailing samples in magnitude buffers
+    double          sample_rate;                          // actual sample rate in use (in hz)
+
     int             fd;              // --ifile option file descriptor
-    uint32_t       *icao_cache;      // Recently seen ICAO addresses cache
+    input_format_t  input_format;    // --iformat option
     uint16_t       *maglut;          // I/Q -> Magnitude lookup table
+    uint16_t       *log10lut;        // Magnitude -> log10 lookup table
     int             exit;            // Exit from the main loop when true
 
+    // Sample conversion
+    int            dc_filter;        // should we apply a DC filter?
+    int            measure_noise;    // should we measure noise power?
+    iq_convert_fn  converter_function;
+    struct converter_state *converter_state;
+
     // RTLSDR
-    int           dev_index;
+    char *        dev_name;
     int           gain;
     int           enable_agc;
     rtlsdr_dev_t *dev;
@@ -269,23 +272,21 @@ struct {                             // Internal state
 
     // Networking
     char           aneterr[ANET_ERR_LEN];
+    struct net_service *services;    // Active services
     struct client *clients;          // Our clients
-    int            sbsos;            // SBS output listening socket
-    int            ros;              // Raw output listening socket
-    int            ris;              // Raw input listening socket
-    int            bos;              // Beast output listening socket
-    int            bis;              // Beast input listening socket
-    int            https;            // HTTP listening socket
-    char          *rawOut;           // Buffer for building raw output data
-    int            rawOutUsed;       // How much of the buffer is currently used
-    char          *beastOut;         // Buffer for building beast output data
-    int            beastOutUsed;     // How much if the buffer is currently used
+
+    struct net_writer raw_out;       // Raw output
+    struct net_writer beast_out;     // Beast-format output
+    struct net_writer sbs_out;       // SBS-format output
+    struct net_writer fatsv_out;     // FATSV-format output
+
 #ifdef _WIN32
     WSADATA        wsaData;          // Windows socket initialisation
 #endif
 
     // Configuration
     char *filename;                  // Input form file, --ifile option
+    int   oversample;
     int   phase_enhance;             // Enable phase enhancement if true
     int   nfix_crc;                  // Number of crc bit error(s) to correct
     int   check_crc;                 // Only display messages with good CRC
@@ -295,100 +296,78 @@ struct {                             // Internal state
     int   debug;                     // Debugging mode
     int   net;                       // Enable networking
     int   net_only;                  // Enable just networking
-    int   net_heartbeat_count;       // TCP heartbeat counter
-    int   net_heartbeat_rate;        // TCP heartbeat rate
+    uint64_t net_heartbeat_interval; // TCP heartbeat interval (milliseconds)
     int   net_output_sbs_port;       // SBS output TCP port
-    int   net_output_raw_size;       // Minimum Size of the output raw data
-    int   net_output_raw_rate;       // Rate (in 64mS increments) of output raw data
-    int   net_output_raw_rate_count; // Rate (in 64mS increments) of output raw data
+    int   net_output_flush_size;     // Minimum Size of output data
+    uint64_t net_output_flush_interval; // Maximum interval (in milliseconds) between outputwrites
     int   net_output_raw_port;       // Raw output TCP port
     int   net_input_raw_port;        // Raw input TCP port
     int   net_output_beast_port;     // Beast output TCP port
     int   net_input_beast_port;      // Beast input TCP port
     char  *net_bind_address;         // Bind address
     int   net_http_port;             // HTTP port
+    int   net_fatsv_port;            // FlightAware TSV port
     int   net_sndbuf_size;           // TCP output buffer size (64Kb * 2^n)
+    int   net_verbatim;              // if true, send the original message, not the CRC-corrected one
+    int   forward_mlat;              // allow forwarding of mlat messages to output ports
     int   quiet;                     // Suppress stdout
+    uint32_t show_only;              // Only show messages from this ICAO
     int   interactive;               // Interactive mode
     int   interactive_rows;          // Interactive mode: max number of rows
-    int   interactive_display_ttl;   // Interactive mode: TTL display
-    int   interactive_delete_ttl;    // Interactive mode: TTL before deletion
-    int   stats;                     // Print stats at exit in --ifile mode
+    uint64_t interactive_display_ttl;// Interactive mode: TTL display
+    uint64_t stats;                  // Interval (millis) between stats dumps,
+    int   stats_range_histo;         // Collect/show a range histogram?
     int   onlyaddr;                  // Print only ICAO addresses
     int   metric;                    // Use metric units
     int   mlat;                      // Use Beast ascii format for raw data output, i.e. @...; iso *...;
     int   interactive_rtl1090;       // flight table in interactive mode is formatted like RTL1090
+    char *json_dir;                  // Path to json base directory, or NULL not to write json.
+    uint64_t json_interval;          // Interval between rewriting the json aircraft file, in milliseconds; also the advertised map refresh interval
+    int   json_location_accuracy;    // Accuracy of location metadata: 0=none, 1=approx, 2=exact
+    int   throttle;                  // When reading from a file, throttle file playback to realtime?
+
+    int   json_aircraft_history_next;
+    struct {
+        char *content;
+        int clen;
+    } json_aircraft_history[HISTORY_SIZE];
 
     // User details
     double fUserLat;                // Users receiver/antenna lat/lon needed for initial surface location
     double fUserLon;                // Users receiver/antenna lat/lon needed for initial surface location
     int    bUserFlags;              // Flags relating to the user details
+    double maxRange;                // Absolute maximum decoding range, in *metres*
 
-    // Interactive mode
+    // State tracking
     struct aircraft *aircrafts;
-    uint64_t         interactive_last_update; // Last screen update in milliseconds
-    time_t           last_cleanup_time;       // Last cleanup time in seconds
-
-    // DF List mode
-    int             bEnableDFLogging; // Set to enable DF Logging
-    pthread_mutex_t pDF_mutex;        // Mutex to synchronize pDF access
-    struct stDF    *pDF;              // Pointer to DF list
 
     // Statistics
-    unsigned int stat_valid_preamble;
-    unsigned int stat_demodulated0;
-    unsigned int stat_demodulated1;
-    unsigned int stat_demodulated2;
-    unsigned int stat_demodulated3;
-    unsigned int stat_goodcrc;
-    unsigned int stat_badcrc;
-    unsigned int stat_fixed;
-
-    // Histogram of fixed bit errors: index 0 for single bit erros,
-    // index 1 for double bit errors etc.
-    unsigned int stat_bit_fix[MODES_MAX_BITERRORS];
-
-    unsigned int stat_http_requests;
-    unsigned int stat_sbs_connections;
-    unsigned int stat_raw_connections;
-    unsigned int stat_beast_connections;
-    unsigned int stat_out_of_phase;
-    unsigned int stat_ph_demodulated0;
-    unsigned int stat_ph_demodulated1;
-    unsigned int stat_ph_demodulated2;
-    unsigned int stat_ph_demodulated3;
-    unsigned int stat_ph_goodcrc;
-    unsigned int stat_ph_badcrc;
-    unsigned int stat_ph_fixed;
-    // Histogram of fixed bit errors: index 0 for single bit erros,
-    // index 1 for double bit errors etc.
-    unsigned int stat_ph_bit_fix[MODES_MAX_BITERRORS];
-
-    unsigned int stat_DF_Len_Corrected;
-    unsigned int stat_DF_Type_Corrected;
-    unsigned int stat_ModeAC;
-
-    unsigned int stat_blocks_processed;
-    unsigned int stat_blocks_dropped;
+    struct stats stats_current;
+    struct stats stats_alltime;
+    struct stats stats_periodic;
+    struct stats stats_1min[15];
+    int stats_latest_1min;
+    struct stats stats_5min;
+    struct stats stats_15min;
 } Modes;
 
 // The struct we use to store information about a decoded message.
 struct modesMessage {
     // Generic fields
     unsigned char msg[MODES_LONG_MSG_BYTES];      // Binary message.
+    unsigned char verbatim[MODES_LONG_MSG_BYTES]; // Binary message, as originally received before correction
     int           msgbits;                        // Number of bits in message 
     int           msgtype;                        // Downlink format #
-    int           crcok;                          // True if CRC was valid
     uint32_t      crc;                            // Message CRC
     int           correctedbits;                  // No. of bits corrected 
-    char          corrected[MODES_MAX_BITERRORS]; // corrected bit positions
-    uint32_t      addr;                           // ICAO Address from bytes 1 2 and 3
-    int           phase_corrected;                // True if phase correction was applied
-    uint64_t      timestampMsg;                   // Timestamp of the message
+    uint32_t      addr;                           // Address Announced
+    uint64_t      timestampMsg;                   // Timestamp of the message (12MHz clock)
+    struct timespec sysTimestampMsg;              // Timestamp of the message (system time)
     int           remote;                         // If set this message is from a remote station
-    unsigned char signalLevel;                    // Signal Amplitude
+    double        signalLevel;                    // RSSI, in the range [0..1], as a fraction of full-scale power
+    int           score;                          // Scoring from scoreModesMessage, if used
 
-    // DF 11
+    // DF 11, DF 17
     int  ca;                    // Responder capabilities
     int  iid;
 
@@ -398,6 +377,7 @@ struct modesMessage {
     int    heading;             // Reported by aircraft, or computed from from EW and NS velocity
     int    raw_latitude;        // Non decoded latitude.
     int    raw_longitude;       // Non decoded longitude.
+    unsigned nuc_p;             // NUCp value implied by message type
     double fLat;                // Coordinates obtained from CPR encoded data if/when decoded
     double fLon;                // Coordinates obtained from CPR encoded data if/when decoded
     char   flight[16];          // 8 chars flight number.
@@ -405,16 +385,26 @@ struct modesMessage {
     int    ns_velocity;         // N/S velocity.
     int    vert_rate;           // Vertical rate.
     int    velocity;            // Reported by aircraft, or computed from from EW and NS velocity
+    unsigned category;          // A0 - D7 encoded as a single hex byte
+
+    // DF 18
+    int    cf;                  // Control Field
 
     // DF4, DF5, DF20, DF21
     int  fs;                    // Flight status for DF4,5,20,21
     int  modeA;                 // 13 bits identity (Squawk).
+
+    // DF20, DF21
+    int  bds;                   // BDS value implied if overlay control was used
 
     // Fields used by multiple message types.
     int  altitude;
     int  unit; 
     int  bFlags;                // Flags related to fields in this structure
 };
+
+// This one needs modesMessage:
+#include "track.h"
 
 // ======================== function declarations =========================
 
@@ -432,32 +422,15 @@ int  ModeAToModeC      (unsigned int ModeA);
 //
 // Functions exported from mode_s.c
 //
-void detectModeS        (uint16_t *m, uint32_t mlen);
-void decodeModesMessage (struct modesMessage *mm, unsigned char *msg);
+int modesMessageLenByType(int type);
+int scoreModesMessage(unsigned char *msg, int validbits);
+int decodeModesMessage (struct modesMessage *mm, unsigned char *msg);
 void displayModesMessage(struct modesMessage *mm);
 void useModesMessage    (struct modesMessage *mm);
-void computeMagnitudeVector(uint16_t *pData);
-int  decodeCPR          (struct aircraft *a, int fflag, int surface);
-int  decodeCPRrelative  (struct aircraft *a, int fflag, int surface);
-void modesInitErrorInfo ();
 //
 // Functions exported from interactive.c
 //
-struct aircraft* interactiveReceiveData(struct modesMessage *mm);
 void  interactiveShowData(void);
-void  interactiveRemoveStaleAircrafts(void);
-int   decodeBinMessage   (struct client *c, char *p);
-struct aircraft *interactiveFindAircraft(uint32_t addr);
-struct stDF     *interactiveFindDF      (uint32_t addr);
-
-//
-// Functions exported from net_io.c
-//
-void modesInitNet         (void);
-void modesReadFromClients (void);
-void modesSendAllClients  (int service, void *msg, int len);
-void modesQueueOutput     (struct modesMessage *mm);
-void modesReadFromClient(struct client *c, char *sep, int(*handler)(struct client *, char *));
 
 #ifdef __cplusplus
 }

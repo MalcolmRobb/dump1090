@@ -9,24 +9,36 @@ div#sidebar_container { float: left; width: 410px; margin-left: -410px; height: 
 
 div#SpecialSquawkWarning { position: absolute; bottom: 25px; right: 430px; border: 2px solid red;
     background-color: #FFFFA3; opacity: 0.75; filter:alpha(opacity=75); padding: 5px;
-    display: none; text-align: center; }
+    text-align: center; }
 
-table#optionsTabs { width: 100%; font-size: small; font-family: monospace; background-color: #ddd;
-    border: 1px; border-color: #000000;}
+div#update_error { position: absolute; bottom: 25px; left: 25px; border: 2px solid red;
+    background-color: #FFFFA3; opacity: 0.75; filter:alpha(opacity=75); padding: 5px;
+    text-align: center; }
+
+div#loader { z-index: 99; position: absolute; left: 0; top: 0; bottom: 0; right: 0; background: #000; opacity: 0.8; filter: alpha(opacity=80); }
+#spinny { width: 128px; height: 128px; position: absolute; top: 50%; left: 50%; margin: -64px 0 0 -64px; }
+#loader_progress { width: 250px; height: 20px; position: absolute; top: 50%; left: 50%; margin: 128px 0 0 -125px; }
 
 #tableinfo, #sudo_buttons { font-size: x-small; font-family: monospace; }
 
 .vPosition  { font-weight: bold; background-color: #d5ffd5; }
+.mlat       { font-weight: bold; background-color: #d5d5ff; }
 .squawk7500 { font-weight: bold; background-color: #ff5555; }
 .squawk7600 { font-weight: bold; background-color: #00ffff; }
 .squawk7700 { font-weight: bold; background-color: #ffff00; }
 .selected   { background-color: #dddddd; }
 .plane_table_row { cursor: pointer; }
+.hidden { display: none; }
 
-#selectedinfotitle  { font-size: larger; }
-#selectedinfo       { font-size: small; }
-#selectedinfo a     { text-decoration: none; color: blue; font-size: x-small;}
-#selectedinfo.dim   { opacity: 0.3; filter:alpha(opacity=30); /* For IE8 and earlier */ }
+.infoblock_heading    { font-size: larger; }
+.infoblock_heading a  { text-decoration: none; color: blue; font-size: x-small;}
+.infoblock_body       { font-size: small; }
+
+#selected_icao { font-size: x-small; }
+#selected_registration { font-size: x-small; }
+#selected_icaotype { font-size: x-small; }
+
+.dim    { opacity: 0.3; filter:alpha(opacity=30); /* For IE8 and earlier */ }
 
 .pointer { cursor: pointer; }
 

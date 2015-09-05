@@ -1,0 +1,339 @@
+dump1090-mutability (1.15~dev) UNRELEASED; urgency=medium
+
+  * In development.
+  * Validate that the username given to debconf is syntactically OK and
+    isn't root. (github issue #24)
+  * Don't fail on postinst if the given user exists but is outside
+    the usual system user UID range. (github issue #24)
+  * Fix timestamp correction when sample blocks are dropped. (github
+    issue #43)
+  * Rearrangements to the receive thread. Magnitude conversion now happens
+    immediately when sample data is received, so there is no risk of newly
+    received data clobbering old data under CPU overload.
+  * Fix endian issues affecting big-endian hosts in Beast input/output
+    and avrmlat output. (github issue #44)
+  * Fix queueing/resending very old Mode A/C messages (github issue #47)
+  * Support a variety of sample input formats, generalize sample conversion
+  * Support noise measurement via --measure-noise
+  * Support DC filtering (quite expensive) via --dcfilter
+  * Track age of heading/speed/altitude; use this when deciding what to emit
+    in FATSV format
+  * Notice synthetic mlat messages by looking for messages with a magic
+    timestamp value. If they arrive, tag the derived data as mlat-derived.
+    Don't include mlat-derived output in FATSV output to avoid loops.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Thu, 19 Feb 2015 22:39:19 +0000
+
+dump1090-mutability (1.14) unstable; urgency=medium
+
+  * Position reporting:
+    * Use the correct maximum inter-position-message intervals for surface
+      position messages (github issue #18).
+    * Disable receiver-relative position decoding entirely if the receiver
+      max range is larger than 360NM.
+    * Implement speed checks on position updates; implausible position
+      changes are discarded, unless they improve NUCp. Fixes most cases
+      of "spikes" in position tracks for aircraft with poor GPS data, and
+      helps with many cases where aircraft are transmitting garbage position
+      data. (github issue #17)
+    * If a position update is considered implausible, discard all the other
+      data in the same message too, just in case - often altitude will be
+      wrong in this case, too.
+
+  * Message decoding/forwarding:
+    * NUCp (navigational uncertainty) is extracted from position messages
+      (github issue #16)
+    * Improved support for DF18 ADS-R/TIS-B message formats and
+      cases where they use non-ICAO addresses (handle the IMF bit)
+    * Don't forward the first message for an aircraft to network clients
+      until we have seen a second message from the same aircraft.
+      This should handle most of the "garbage ICAO address" cases.
+      Disabled in --net-verbatim mode.
+    * Aircraft with only one message seen are pruned more aggressively
+      (60 second timeout vs. 300 second timeout normally)
+    * Don't emit SBS output for non-ICAO addresses (github issue #9)
+    * Improved the calculation of message reception time seen in SBS output.
+      Now message reception time should be strictly before current time.
+    * Don't try to correct more than one error in DF11 messages as these
+      messages have reduced CRC coverage and multiple-bit errors are
+      ambiguous.
+    * Fix some undecodable altitudes that would be interpreted as a valid
+      altitude of 0ft.
+
+  * Stats & JSON:
+    * Documented the JSON formats (see README-json.md)
+    * Fix "-infdB" in stats if no signal peaks have been recorded.
+    * NUCp is reported in aircraft.json
+    * Fix "unrecognised ICAO address" stat counter to count the right thing.
+    * Gather stats on number of unique aircraft tracks seen, and number of
+      tracks where only a single message was seen (which are probably
+      garbage).
+    * Fix stats timestamp output during the period shortly after restart.
+    * Include timezone in timestamps shown with --stats
+    * Add various stats for CPR position-decoding details.
+
+  * Webmap:
+    * Fix webmap history loading when no history is present.
+    * Better handling of long refresh times in the webmap.
+
+  * Packaging/misc:
+    * Fix config handling of lat/lon between -0.999 and 0 (github issue #14)
+    * Add --oversample option to help text (github issue #11)
+    * More options now accept fractional seconds (--stats-every,
+      --net-heartbeat, --net-ro-interval, --write-json-every)
+    * Start dump1090 with a niceness of -5 to reduce the chance of dropped
+      sample data, except in --net-only mode where it's not using a RTLSDR
+      dongle (github issue #19)
+    * Make sure background tasks have a chance to run even if the sample rx
+      thread is blocked waiting for a USB reconnect. (github issue #20)
+    * Include timestamps in logging of USB disconnects/reconnects (github
+      issue #21)
+    * Catch SIGTERM and do clean shutdown like SIGINT does. Also log about
+      it. (github issue #22)
+    * Log (with timestamps) on startup/shutdown so it's more obvious in logs
+      where dump1090 restarted.
+    * Mark all HTML/Javascript as conffiles to avoid overwriting user changes
+      on package upgrade, as many people seem to modify these files.
+      (github issue #15)
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Thu, 19 Feb 2015 19:41:39 +0000
+
+dump1090-mutability (1.13) unstable; urgency=medium
+
+  * Moved to a simpler versioning scheme rather than trying
+    to put suffixes on the end of the upstream version scheme.
+
+  * Statistics updates for the stats junkies amongst us.
+    Note that many of these apply to the 2.4MHz demodulator only.
+    * Rationalized the demodulation stats that are collected.
+    * Collect mean signal level, peak signal values.
+    * Collect a count of signals stronger than -3dBFS.
+    * Collect stats on remotely-received messages.
+    * Collect stats on CPR position decoding.
+    * Collect more CPU stats.
+    * Stat buckets for the last 1, 5, 15 mins are maintained.
+    * Stats display due to --stats-every does not reset the "total" stats.
+    * All stats are now exported via JSON at /data/stats.json.
+
+  * When --oversample --phase-enhance is in use, all phase positions are
+    evaluated and the best result is used, rather than stopping at the first
+    error-free message. This increases CPU by about 1/4 but recovers about
+    5% more messages.
+  * Error correction in --aggressive mode is now more conservative:
+    it will only fix 2-bit errors that can't be confused with a 4-bit error.
+  * DF11 messages can now be partially error-corrected (only for errors that
+    do not result in a syndrome in the final 7 CRC bits)
+  * Partial TIS-B support. Feedback sought from people who actually receive
+    TIS-B messages!
+  * Support for non-alphanumeric characters in callsigns.
+  * RSSI measured for individual messages.
+  * Simple filtering for bogus messages that make it past CRC checks: don't
+    display or emit aircraft state until we have seen at least two messages
+    from the same aircraft.
+  * --net-verbatim option added; if enabled, for messages that have
+    repairable CRC errors the unrepaired version of the message is forwarded
+    to network clients. This lets the client decide what policy to impose on
+    damaged messages.
+  * Made 2.4MHz sampling the default for new installs.
+
+  * Internal changes:
+    * Restructuring of the code to be a bit more modular.
+    * Mode S message decoder and output formatting cleanups.
+    * 2.4MHz demodulator main loop unrolled to demodulate a byte at a time;
+      this helps compensate a little for the --phase-enhance change above.
+    * CRC calculation switched to a faster byte-at-a-time table lookup.
+    * ICAO address filter rewritten to be a bit smarter, and to support
+      Comm-B overlay control in the future.
+    * Non-ICAO addresses (e.g. from TIS-B and ModeA/C) are flagged internally
+      so they cannot be confused with a real ICAO address.
+    * More changes to try to work around libusb crashes on exit.
+
+  * Webmap changes:
+    * Show recent RSSI for the selected aircraft.
+    * Non-ICAO addresses are shown italicized.
+    * Fix webmap stable sort of rows with no sortable values (would cause
+      "jumping" rows at the end of the table)
+    * Doubleclick on an aircraft marker or table row to follow that aircraft,
+      recentering the map as it moves. Or click on the selected aircraft's
+      callsign or the arrow next to it.
+    * config.js cleanups. Page title and site name can be specified here now.
+    * Added vertical rate indicators to altitudes on the webmap.
+    * Linked from the aircraft ICAO to airframes.org. (Other site
+      recommendations welcome!)
+    * Infoblock layout changes.
+
+  * License for my modifications changed to GPL2+. Previous binary
+    releases were effectively already GPL2+ due to linking with librtlsdr.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Sun, 25 Jan 2015 16:45:00 +0000
+
+dump1090-mutability (1.10.3010.14mu-12) unstable; urgency=medium
+
+  * Add generation of history JSON.
+  * Load history when the webmap is initialized.
+  * Display stats on exit in --net-only mode.
+  * Explicitly pick the closest tuner gain to the one requested.
+  * Include a status message in HTTP response headers.
+  * Fix sort-by-message-count in the webmap.
+  * Always sort missing values at the end of the table, even in a descending sort.
+  * Avoid a (rare) divide-by-zero crash in 2MHz --phase-enhance.
+  * Try to work around a libusb crash on exit after SIGINT.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Sat, 17 Jan 2015 21:03:55 +0000
+
+dump1090-mutability (1.10.3010.14mu-11) unstable; urgency=medium
+
+  * Fix UTC clock display in non-UTC timezones.
+  * Layout tweaks in the info panel.
+  * Change plane color if we have not seen a recent position update
+    (previously, any type of message was enough).
+  * Fix thinko in skipping over decoded message samples in the 2.4MHz demodulator.
+  * Fix a couple of problems found by valgrind.
+  * Fix several problems with surface position decoding and relative
+    position decoding.
+  * Fix hang on exit after SIGINT.
+  * Add --max-range parameter. Use it for relative position limits, and to
+    discard bad position results.
+  * Display message rate (30 sec average) on the webmap.
+  * Restart lighttpd on package upgrade if we changed its config files.
+  * Require that the JSON refresh interval is at least 1, as it is used
+    to control the webmap refresh rate even if JSON files are not being written.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Wed, 14 Jan 2015 01:17:51 +0000
+
+dump1090-mutability (1.10.3010.14mu-10) unstable; urgency=medium
+
+  * Many changes to aircraft.json and the webserver code:
+
+  * Restructure to include the current timestamp, and move
+    aircraft data down a level. If you're processing the JSON yourself,
+    you will need to adjust your code to handle this.
+  * Only include aircraft data when we are sure it's valid.
+  * Include the time of the last position report in.
+  * If the aircraft is on the ground, report altitude as "ground".
+  * Strip trailing query strings from URLs before matching, to allow AJAX
+    cache-busting query strings to work.
+  * Disable the lighttpd stat cache in the provided config fragment, to
+    avoid problems with partial content being served if lighttpd caches an
+    old size for the JSON data. This would manifest as "bad content length"
+    or JSON parse errors in the webmap.
+
+  * Many changes to the webmap javascript:
+
+  * Internal restructuring of how the plane table and map markers are
+    maintained. Should be faster and less memory-hungry.
+  * Sorting the plane table now sorts missing data high (end of the table for an
+    ascending sort).
+  * On-the-ground aircraft display an altitude of "ground".
+  * Dashed tracks are used when there are lots of missing position reports (more
+    than 5 seconds between positions).
+  * Green tracks are used for on-the-ground aircraft.
+  * Limit history storage requirements by only retaining at most one position
+    per 5 seconds.
+  * Removal of old aircraft should be much more reliable now, even across
+    long pauses (e.g. browser hibernation).
+  * Change the clocks to be two UTC clocks: one from local browser time,
+    one reflecting the receiver timestamp in the last update.
+  * Add "total aircraft" and "total aircraft with positions" counters to the
+    infobox when no aircraft is selected.
+  * Add a "history positions" counter to the infobox when no aircraft is
+    selected; this shows the number of points making up the historical track
+    lines.
+  * When an aircraft is selected, show both metric and imperial units in the
+    infobox (metric setting controls which is shown first).
+  * When an aircraft is selected, show the time since last message and time
+    since last position message in the infobox.
+  * If aircraft.json can't be retrieved, display a warning.
+  * If aircraft.json can be retrieved but doesn't appear to be being updated
+    (e.g. external webserver, and dump1090 has stopped), display a warning.
+  * config.js: Change the default map zoom setting to be more zoomed in.
+  * config.js: Add some comments.
+  * config.js: Add an option to hide the clocks.
+  * Remove extension.js and options.js, as they aren't really maintained.
+  * Enable strict mode for script.js / planeObject.js.
+
+  * Fix initial map centering to correctly use the receiver location.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Wed, 07 Jan 2015 23:54:10 +0000
+
+dump1090-mutability (1.10.3010.14mu-9) unstable; urgency=medium
+
+  * Fix warnings. Add -Werror so they break the build in future.
+  * Remove dead tracking code related to the removed PlanePlotter feed.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Sun, 04 Jan 2015 20:23:26 +0000
+
+dump1090-mutability (1.10.3010.14mu-8) unstable; urgency=medium
+
+  * Version-only rebuild to reflect the upstream dump1090 version we
+    have merged from. Retaining the trailing build number to avoid
+    confusion (as far as that's possible given this versioning system!)
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Sun, 04 Jan 2015 12:32:30 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-7) unstable; urgency=medium
+
+  * Notice if we lose the RTLSDR device, and try to reconnect when that happens.
+    This lets you unplug/replug the RTLSDR without dump1090 exiting, and also
+    lets dump1090 tolerate occasional USB glitches that make the dongle reset
+    itself.
+  * Fix some of the more glaring pthread bugs.
+  * Center the webmap on the receiver location.
+  * Mark config.js as a conffile, so user changes won't get overwritten.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Fri, 02 Jan 2015 22:53:55 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-6) unstable; urgency=medium
+
+  * Add support for LOG_DECODED_MESSAGES option to log all messages (disables --quiet).
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Tue, 30 Dec 2014 17:09:36 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-5) unstable; urgency=medium
+
+  * Add Provides: fatsv-data-source
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Tue, 30 Dec 2014 00:01:51 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-4) unstable; urgency=medium
+
+  * Remove half-implemented --no-decode option.
+  * Remove Windows support files that aren't needed for the Debian package.
+  * Remove some legacy support scripts not needed by the Debian package.
+  * Add support for controlling the accuracy of the receiver location
+    written in the JSON metadata used by the webmap.
+  * Oversampling is now less scary!
+  * Warn if --modeac is used together with --oversample.
+  * Link to github from the webmap.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Sat, 27 Dec 2014 22:24:39 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-3) unstable; urgency=medium
+
+  * Ask about json interval before json dir and skip the dir question if
+    the interval is disabled, it makes more sense that way.
+  * Be much more cautious about missing config settings so we don't explode
+    so badly if something is omitted.
+  * Use the package version as the version number compiled into the binary.
+  * Add data/receiver.json (generated once) and support for it in script.js.
+  * Internal webserver rearrangement to support multiple json files.
+  * Dongle "device index" actually accepts serial numbers too, document that.
+  * Add input validation to most of the config questions.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Wed, 10 Dec 2014 21:58:12 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-2) unstable; urgency=medium
+
+  * Fix a memory leak from use of realpath() in HTTP request processing.
+  * Add direct support for FATSV-format output, adapted from the FlightAware
+    fork.
+  * Big rearrangement of configuration to add debconf support.
+  * Update Build-Depends based on glitches found building under pbuilder.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Wed, 10 Dec 2014 01:06:56 +0000
+
+dump1090-mutability (1.08.2302.14+1mu-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Oliver Jowett <oliver@mutability.co.uk>  Sat, 06 Dec 2014 23:07:02 +0000

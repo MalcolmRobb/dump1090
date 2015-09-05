@@ -1,0 +1,6 @@
+public_html/* usr/share/dump1090-mutability/html
+debian/lighttpd/* etc/lighttpd/conf-available
+debian/config-template usr/share/dump1090-mutability
+debian/cron-template usr/share/dump1090-mutability
+tools/vrs-basicaircraft-to-json.py usr/share/dump1090-mutability
+tools/update-aircraft-database.sh usr/share/dump1090-mutability

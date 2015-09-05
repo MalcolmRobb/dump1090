@@ -1,0 +1,128 @@
+## TEMPLATE FILE - This is used to create /etc/default/dump1090-mutability ##
+## The first three lines will be discarded                                 ##
+
+# dump1090-mutability configuration file
+# This is a POSIX shell fragment.
+# You can edit this file directly, or use
+# "dpkg-reconfigure dump1090-mutability"
+
+# Set to "yes" to start dump1090 on boot.
+START_DUMP1090=
+
+# User to run dump1090 as.
+DUMP1090_USER=
+
+# Logfile to log to
+LOGFILE=
+
+#
+# Receiver options
+#
+
+# RTLSDR device index or serial number to use
+# If set to "none", dump1090 will be started in --net-only mode
+DEVICE=
+
+# RTLSDR gain in dB.
+# If set to "max" (the default) the maximum supported gain is used.
+# If set to "agc", the tuner AGC is used to set the gain.
+GAIN=
+
+# RTLSDR frequency correction in PPM
+PPM=
+
+# If yes, enable sampling at 2.4MHz. Otherwise, 2.0MHz is used.
+OVERSAMPLE=
+
+# If yes, enables phase-enhancement of messages
+PHASE_ENHANCE=
+
+#
+# Decoding options
+#
+
+# If yes, fixes messages with correctable CRC errors.
+FIX_CRC=
+
+# If yes, enables aggressive fixes to damaged messages.
+# Use with caution - it can increase the rate of undetected errors.
+AGGRESSIVE=
+
+# If set, supplies a reference location for local position decoding.
+LAT=
+LON=
+
+# If set, provides the absolute maximum receiver range used to
+# filter bad position reports, and to determine when local position
+# decoding is safe to use. Specify this in nautical miles (NM).
+MAX_RANGE=
+
+#
+# Networking options
+#
+
+# Port to listen on for HTTP connections. 0 disables.
+# HTTP defaults to being disabled unless you specify something here. I 
+# that you do not enable this, and instead serve the contents of
+# /usr/share/dump1090-mutability and JSON_DIR (below) using a proper
+# webserver. See /etc/lighttpd/conf-available/90-dump1090.conf
+# for an example configuration ("sudo lighty-enable-mod dump1090" to enable)
+HTTP_PORT=
+
+# Port to listen on for raw (AVR-format) input connections. 0 disables.
+RAW_INPUT_PORT=
+
+# Port to listen on for raw (AVR-format) output connections. 0 disables.
+RAW_OUTPUT_PORT=
+
+# Port to listen on for SBS-format output connections. 0 disables.
+SBS_OUTPUT_PORT=
+
+# Port to listen on for Beast-format input connections. 0 disables.
+BEAST_INPUT_PORT=
+
+# Port to listen on for Beast-format output connections. 0 disables.
+BEAST_OUTPUT_PORT=
+
+# Port to listen on for FATSV-format output connections. 0 disables.
+FATSV_OUTPUT_PORT=
+
+# TCP heartbeat interval in seconds. 0 disables.
+NET_HEARTBEAT=
+
+# Minimum output buffer size per write, in bytes.
+NET_OUTPUT_SIZE=
+
+# Maximum buffering time before writing, in seconds.
+NET_OUTPUT_INTERVAL=
+
+# TCP buffer size, in bytes
+NET_BUFFER=
+
+# Bind ports on a particular address. If unset, binds to all interfaces.
+# This defaults to binding to localhost. If you need to allow remote
+# connections, change this.
+NET_BIND_ADDRESS=
+
+#
+# Misc options
+#
+
+# Interval (in seconds) between logging stats to the logfile. 0 disables.
+STATS_INTERVAL=
+
+# Path to write json state to (for use with an external webserver). Blank disables.
+JSON_DIR=
+
+# Interval between writing json state (in seconds). 0 disables.
+JSON_INTERVAL=
+
+# Accuracy of receiver location to write to json state, one of "exact" / "approximate" / "none"
+JSON_LOCATION_ACCURACY=
+
+# Set to yes to log all decoded messages
+# This can get large fast!
+LOG_DECODED_MESSAGES=
+
+# Additional options that are passed to the Daemon.
+EXTRA_ARGS=

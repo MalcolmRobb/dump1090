@@ -1,0 +1,207 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          dump1090-mutability
+# Required-Start:    $remote_fs
+# Required-Stop:     $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: dump1090 daemon (mutability variant)
+# Description:       Receives ADS-B messages from a RTLSDR dongle
+#                    and makes them available to other applications via
+#                    a variety of network protocols.
+### END INIT INFO
+
+# Do NOT "set -e"
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="dump1090-mutability daemon"
+NAME=dump1090-mutability
+DAEMON=/usr/bin/$NAME
+ARGS=""
+PIDFILE=/var/run/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Read configuration variable file if it is present
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+# work out daemon args
+
+# sanitize missing settings
+[ -z "$START_DUMP1090" ] && START_DUMP1090=no
+[ -z "$DUMP1090_USER" ] && DUMP1090_USER="missing-DUMP1090_USER-setting-in-config"
+[ -z "$HTTP_PORT" ] && HTTP_PORT=0
+[ -z "$RAW_INPUT_PORT" ] && RAW_INPUT_PORT=0
+[ -z "$RAW_OUTPUT_PORT" ] && RAW_OUTPUT_PORT=0
+[ -z "$SBS_OUTPUT_PORT" ] && SBS_OUTPUT_PORT=0
+[ -z "$BEAST_INPUT_PORT" ] && BEAST_INPUT_PORT=0
+[ -z "$BEAST_OUTPUT_PORT" ] && BEAST_OUTPUT_PORT=0
+[ -z "$FATSV_OUTPUT_PORT" ] && FATSV_OUTPUT_PORT=0
+[ -z "$NET_BUFFER" ] && NET_BUFFER=0
+[ -z "$JSON_INTERVAL" ] && JSON_INTERVAL=0
+[ -z "$MAX_RANGE" ] && MAX_RANGE=300
+
+# receiver:
+NICELEVEL="--nicelevel -5"
+case "x$DEVICE" in
+ x|x0) ARGS="$ARGS --net" ;;
+ xnone) ARGS="$ARGS --net-only"; NICELEVEL="" ;;
+ *) ARGS="$ARGS --net --device-index $DEVICE" ;;
+esac
+case "x$GAIN" in
+ x|xmax) ;;
+ xagc) ARGS="$ARGS --gain -10" ;;  
+ *) ARGS="$ARGS --gain $GAIN" ;;
+esac
+if [ -n "$PPM" ]; then ARGS="$ARGS --ppm $PPM"; fi
+if [ "x$OVERSAMPLE" = "xyes" ]; then ARGS="$ARGS --oversample"; fi
+
+# decoder:
+if [ "x$FIX_CRC" = "xyes" ]; then ARGS="$ARGS --fix"; fi
+if [ "x$PHASE_ENHANCE" = "xyes" ]; then ARGS="$ARGS --phase-enhance"; fi
+if [ "x$AGGRESSIVE" = "xyes" ]; then ARGS="$ARGS --aggressive"; fi
+if [ -n "$LAT" ]; then ARGS="$ARGS --lat $LAT"; fi
+if [ -n "$LON" ]; then ARGS="$ARGS --lon $LON"; fi
+ARGS="$ARGS --max-range $MAX_RANGE"; fi
+
+# net:
+
+ARGS="$ARGS --net-http-port $HTTP_PORT \
+--net-ri-port $RAW_INPUT_PORT --net-ro-port $RAW_OUTPUT_PORT \
+--net-bi-port $BEAST_INPUT_PORT --net-bo-port $BEAST_OUTPUT_PORT \
+--net-sbs-port $SBS_OUTPUT_PORT --net-fatsv-port $FATSV_OUTPUT_PORT"
+if [ -n "$NET_HEARTBEAT" ]; then ARGS="$ARGS --net-heartbeat $NET_HEARTBEAT"; fi
+if [ -n "$NET_OUTPUT_SIZE" ]; then ARGS="$ARGS --net-ro-size $NET_OUTPUT_SIZE"; fi
+if [ -n "$NET_OUTPUT_INTERVAL" ]; then ARGS="$ARGS --net-ro-interval $NET_OUTPUT_INTERVAL"; fi
+if [ "$NET_BUFFER" -le "65536" ]; then ARGS="$ARGS --net-buffer 0"
+elif [ "$NET_BUFFER" -le "131072" ]; then ARGS="$ARGS --net-buffer 1"
+elif [ "$NET_BUFFER" -le "262144" ]; then ARGS="$ARGS --net-buffer 2"
+else ARGS="$ARGS --net-buffer 3"; fi
+if [ -n "$NET_BIND_ADDRESS" ]; then ARGS="$ARGS --net-bind-address $NET_BIND_ADDRESS"; fi
+
+# misc:
+if [ -n "$STATS_INTERVAL" ]; then ARGS="$ARGS --stats-every $STATS_INTERVAL"; fi
+if [ -n "$JSON_DIR" ]; then ARGS="$ARGS --write-json $JSON_DIR"; fi
+if [ -n "$JSON_INTERVAL" ]; then ARGS="$ARGS --write-json-every $JSON_INTERVAL"; fi
+case "x$JSON_LOCATION_ACCURACY" in
+  xexact) ARGS="$ARGS --json-location-accuracy 2" ;;
+  xapproximate) ARGS="$ARGS --json-location-accuracy 1" ;;
+  *) ARGS="$ARGS --json-location-accuracy 0" ;;
+esac
+
+if [ "x$LOG_DECODED_MESSAGES" != "xyes" ]; then ARGS="$ARGS --quiet"; fi
+
+if [ -n "$EXTRA_ARGS" ]; then ARGS="$ARGS $EXTRA_ARGS"; fi
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+	# Return
+	#   0 if daemon has been started
+	#   1 if daemon was already running
+	#   2 if daemon could not be started
+
+        if [ "x$START_DUMP1090" != "xyes" ]; then
+            log_warning_msg "Not starting $NAME daemon, disabled via /etc/default/$NAME"
+            return 2
+        fi
+
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --user "$DUMP1090_USER" --exec $DAEMON --test > /dev/null \
+		|| return 1
+
+        # create JSON_DIR with the appropriate permissions
+        # (it is on /run by default, so will be lost on reboot)
+        if [ "x$JSON_DIR" != "x" ]; then
+           if [ ! -e $JSON_DIR ]; then
+             (mkdir $JSON_DIR && chmod 0755 $JSON_DIR && chown $DUMP1090_USER $JSON_DIR) || log_warning_msg "Failed to create $JSON_DIR"
+           fi
+        fi
+
+        # create logfile with the appropriate permissions if not already there
+        # (the cronjob running as DUMP1090_USER wants to append to it)
+        touch $LOGFILE
+        chown "$DUMP1090_USER":root $LOGFILE
+
+	start-stop-daemon --start $NICELEVEL --quiet --pidfile $PIDFILE --user "$DUMP1090_USER" --chuid "$DUMP1090_USER" --make-pidfile --background --no-close --exec $DAEMON -- \
+		$ARGS >>$LOGFILE 2>&1 \
+		|| return 2
+        sleep 1
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+	# Return
+	#   0 if daemon has been stopped
+	#   1 if daemon was already stopped
+	#   2 if daemon could not be stopped
+	#   other if a failure occurred
+	start-stop-daemon --stop --retry=TERM/30/KILL/5 --pidfile $PIDFILE --user "$DUMP1090_USER" --exec $DAEMON
+	RETVAL="$?"
+	[ "$RETVAL" = 2 ] && return 2
+        sleep 1
+	# Many daemons don't delete their pidfiles when they exit.
+	rm -f $PIDFILE
+	return "$RETVAL"
+}
+
+case "$1" in
+  start)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	do_start
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  stop)
+	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	do_stop
+	case "$?" in
+		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+	esac
+	;;
+  status)
+	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
+  restart|force-reload)
+	log_daemon_msg "Restarting $DESC" "$NAME"
+	do_stop
+	case "$?" in
+	  0|1)
+		do_start
+		case "$?" in
+			0) log_end_msg 0 ;;
+			1) log_end_msg 1 ;; # Old process is still running
+			*) log_end_msg 1 ;; # Failed to start
+		esac
+		;;
+	  *)
+		# Failed to stop
+		log_end_msg 1
+		;;
+	esac
+	;;
+  *)
+	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	exit 3
+	;;
+esac
+
+:

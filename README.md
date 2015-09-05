@@ -1,284 +1,155 @@
-Dump1090 README
-===
+# dump1090-mutability Debian/Raspbian packages
+[![Build Status](https://travis-ci.org/mutability/dump1090.svg?branch=master)](https://travis-ci.org/mutability/dump1090)
 
-Dump 1090 is a Mode S decoder specifically designed for RTLSDR devices.
+This is a fork of MalcolmRobb's version of dump1090
+that adds new functionality and is designed to be built as
+a Debian/Raspbian package.
 
-The main features are:
+This version is licensed under the GPL (v2 or later).
+See the file COPYING for details.
 
-* Robust decoding of weak messages, with mode1090 many users observed
-  improved range compared to other popular decoders.
-* Network support: TCP30003 stream (MSG5...), Raw packets, HTTP.
-* Embedded HTTP server that displays the currently detected aircrafts on
-  Google Map.
-* Single bit errors correction using the 24 bit CRC.
-* Ability to decode DF11, DF17 messages.
-* Ability to decode DF formats like DF0, DF4, DF5, DF16, DF20 and DF21
-  where the checksum is xored with the ICAO address by brute forcing the
-  checksum field using recently seen ICAO addresses.
-* Decode raw IQ samples from file (using --ifile command line switch).
-* Interactive command-line-interfae mode where aircrafts currently detected
-  are shown as a list refreshing as more data arrives.
-* CPR coordinates decoding and track calculation from velocity.
-* TCP server streaming and recceiving raw data to/from connected clients
-  (using --net).
+# Features
 
-Installation
----
+* 2.4MHz "oversampling" support
+* doesn't run as root
+* supports FlightAware-TSV-format connections directly (same as the FlightAware version - no faup1090 needed)
+* can start from init.d, with detailed config via debconf or `/etc/default/dump1090-mutability`
+* can serve the virtual radar map via an external webserver (lighttpd integration included by default)
+* map view uses receiver lat/long given to dump1090 automatically
+* somewhat cleaned-up network code
+* tries to do things "the debian way" when it comes to config, package structure, etc
+* probably a bunch of other things I've forgotten..
 
-Type "make".
+# Simple install via apt-get
 
-Normal usage
----
+There is a repository that contains the current releases. To set up the repository:
 
-To capture traffic directly from your RTL device and show the captured traffic
-on standard output, just run the program without options at all:
+````
+$ wget https://github.com/mutability/mutability-repo/releases/download/v0.1.0/mutability-repo_0.1.0_armhf.deb
+$ sudo dpkg -i mutability-repo_0.1.0_armhf.deb
+````
 
-    ./dump1090
+Then you can install and upgrade packages via apt-get as needed:
 
-To just output hexadecimal messages:
+````
+$ sudo apt-get update && sudo apt-get install dump1090-mutability
+$ sudo dpkg-reconfigure dump1090-mutability                           # for detailed configuration
+$ sudo apt-get install lighttpd && sudo lighty-enable-mod dump1090    # if you want to use the external webserver integration
+````
 
-    ./dump1090 --raw
+Installing the mutability-repo package also installs the public key used to sign the packages; the signatures will be verified automatically by apt-get.
 
-To run the program in interactive mode:
+# Manual repository setup
 
-    ./dump1090 --interactive
+Add a suitable entry to sources.list:
 
-To run the program in interactive mode, with networking support, and connect
-with your browser to http://localhost:8080 to see live traffic:
+````
+# echo "deb http://repo.mutability.co.uk/raspbian wheezy rpi" >/etc/apt/sources.list.d/mutabiltiy.list
+````
 
-    ./dump1090 --interactive --net
+Obtain the public key used to sign the repository release by a method of your choice. This is the signing key:
 
-In iteractive mode it is possible to have a less information dense but more
-"arcade style" output, where the screen is refreshed every second displaying
-all the recently seen aircrafts with some additional information such as
-altitude and flight number, extracted from the received Mode S packets.
+````
+pub   2048R/4D731812 2014-12-28 [expires: 2015-12-28]
+      Key fingerprint = 2098 7C8D D31A 6107 E033  7CC3 80D5 57AA 4D73 1812
+uid                  Oliver Jowett (repo.mutability.co.uk archive signing key) <oliver@mutability.co.uk>
+````
 
-Using files as source of data
----
+which is available from:
 
-To decode data from file, use:
+ * [GitHub](https://github.com/mutability/mutability-repo/raw/master/mutability.gpg)
+ * [repo.mutability.co.uk](http://repo.mutability.co.uk/mutability.gpg) (caution - not HTTPS!)
+ * keys.gnupg.net (`gpg --keyserver keys.gnupg.net --recv-keys 4D731812`)
 
-    ./dump1090 --ifile /path/to/binfile
+Install the key with `apt-key add` or by placing the keyring in `/etc/apt/trusted.gpg.d/`
 
-The binary file should be created using `rtl_sdr` like this (or with any other
-program that is able to output 8-bit unsigned IQ samples at 2Mhz sample rate).
+# Manual installation
 
-    rtl_sdr -f 1090000000 -s 2000000 -g 50 output.bin
+To install from packages directly:
 
-In the example `rtl_sdr` a gain of 50 is used, simply you should use the highest
-gain availabe for your tuner. This is not needed when calling Dump1090 itself
-as it is able to select the highest gain supported automatically.
+You will need a librtlsdr0 package for Raspbian.
+There is no standard build of this.
+I have built suitable packages that are available from 
+[this release page](https://github.com/mutability/librtlsdr/releases)
 
-It is possible to feed the program with data via standard input using
-the --ifile option with "-" as argument.
+Then you will need the dump1090-mutability package itself from
+[this release page](https://github.com/mutability/dump1090/releases)
 
-Additional options
----
+Install the packages with dpkg.
 
-Dump1090 can be called with other command line options to set a different
-gain, frequency, and so forth. For a list of options use:
+# Configuration
 
-    ./dump1090 --help
+By default it'll only ask you whether to start automatically and assume sensible defaults for everything else.
+Notable defaults that are perhaps not what you'd first expect:
 
-Everything is not documented here should be obvious, and for most users calling
-it without arguments at all is the best thing to do.
+* All network ports are bound to the localhost interface only.
+  If you need remote access to the ADS-B data ports, you will want to change this to bind to the wildcard address.
+* The internal HTTP server is disabled. I recommend using an external webserver (see below).
+  You can reconfigure to enable the internal one if you don't want to use an external one.
 
-Reliability
----
+To reconfigure, either use `dpkg-reconfigure dump1090-mutability` or edit `/etc/default/dump1090-mutability`. Both should be self-explanatory.
 
-By default Dump1090 checks for decoding errors using the 24-bit CRC checksum,
-where available. Messages with errors are discarded.
+## External webserver configuration
 
-The --fix command line switch enables fixing single bit error correction
-based on the CRC checksum. Technically, it uses a table of precomputed
-checksum differences resulting from single bit errors to look up the
-wrong bit position.
+This is the recommended configuration; a dedicated webserver is almost always going to be better and more secure than the collection of hacks that is the dump1090 webserver.
+It works by having dump1090 write json files to a path under `/run` once a second (this is on tmpfs and will not write to the sdcard).
+Then an external webserver is used to serve both the static html/javascript files making up the map view, and the json files that provide the dynamic data.
 
-This is indeed able to fix errors and works reliably in my experience,
-however if you are interested in very reliable data I suggest to use
-the --no-fix command line switch in order to disable error fixing.
+The package includes a config file for lighttpd (which is what I happen to use on my system).
+To use this:
 
-Performances and sensibility of detection
----
+````
+# apt-get install lighttpd         # if you don't have it already
+# lighty-enable-mod dump1090
+# service lighttpd force-reload
+````
 
-In my limited experience Dump1090 was able to decode a big number of messages
-even in conditions where I encountered problems using other programs, however
-no formal test was performed so I can't really claim that this program is
-better or worse compared to other similar programs.
+This uses a configuration file installed by the package at `/etc/lighttpd/conf-available/89-dump1090.conf`.
+It makes the map view available at http://<pi address>/dump1090/
 
-If you can capture traffic that Dump1090 is not able to decode properly, drop
-me an email with a download link. I may try to improve the detection during
-my free time (this is just an hobby project).
+This should also work fine with other webservers, you will need to write a similar config to the lighttpd one (it's basically just a couple of aliases).
+If you do set up a config for something else, please send me a copy so I can integrate it into the package!
 
-Network server features
----
+## Logging
 
-By enabling the networking support with --net Dump1090 starts listening
-for clients connections on port 30002 and 30001 (you can change both the
-ports if you want, see --help output).
+The default configuration logs to `/var/log/dump1090-mutability.log` (this can be reconfigured).
+The only real logging other than any startup problems is hourly stats.
+There is a logrotate configuration installed by the package at `/etc/logrotate.d/dump1090-mutability` that will rotate that logfile weekly.
 
-Port 30002
----
+# Bug reports, feedback etc
 
-Connected clients are served with data ASAP as they arrive from the device
-(or from file if --ifile is used) in the raw format similar to the following:
+Please use the [github issues page](https://github.com/mutability/dump1090/issues) to report any problems.
+Or you can [email me](mailto:oliver@mutability.co.uk).
 
-    *8D451E8B99019699C00B0A81F36E;
+# Future plans
 
-Every entry is separated by a simple newline (LF character, hex 0x0A).
+Packages following the same model for MalcolmRobb & FlightAware's forks of dump1090 are in the pipeline.
+So is a repackaged version of piaware.
 
-Port 30001
----
+# Building from source
 
-Port 30001 is the raw input port, and can be used to feed Dump1090 with
-data in the same format as specified above, with hex messages starting with
-a `*` and ending with a `;` character.
+While there is a Makefile that you can use, the preferred way to build is via the Debian package building system:
 
-So for instance if there is another remote Dump1090 instance collecting data
-it is possible to sum the output to a local Dump1090 instance doing something
-like this:
+````
+$ sudo apt-get install librtlsdr-dev libusb-1.0-0-dev pkg-config debhelper
+$ dpkg-buildpackage -b
+````
 
-    nc remote-dump1090.example.net 30002 | nc localhost 30001
+Or you can use debuild/pdebuild. I find building via qemubuilder quite effective for building images for Raspbian (it's actually faster to build on an emulated ARM running on my PC than to build directly on real hardware).
 
-It is important to note that what is received via port 30001 is also
-broadcasted to clients listening to port 30002.
+Here's the pbuilder config I use to build the Raspbian packages:
 
-In general everything received from port 30001 is handled exactly like the
-normal traffic from RTL devices or from file when --ifile is used.
-
-It is possible to use Dump1090 just as an hub using --ifile with /dev/zero
-as argument as in the following example:
-
-    ./dump1090 --net-only
-
-Or alternatively to see what's happening on the screen:
-
-    ./dump1090 --net-only --interactive
-
-Then you can feed it from different data sources from the internet.
-
-Port 30003
----
-
-Connected clients are served with messages in SBS1 (BaseStation) format,
-similar to:
-
-    MSG,4,,,738065,,,,,,,,420,179,,,0,,0,0,0,0
-    MSG,3,,,738065,,,,,,,35000,,,34.81609,34.07810,,,0,0,0,0
-
-This can be used to feed data to various sharing sites without the need to use another decoder.
-
-Antenna
----
-
-Mode S messages are transmitted in the 1090 Mhz frequency. If you have a decent
-antenna you'll be able to pick up signals from aircrafts pretty far from your
-position, especially if you are outdoor and in a position with a good sky view.
-
-You can easily build a very cheap antenna following the istructions at:
-
-    http://antirez.com/news/46
-
-With this trivial antenna I was able to pick up signals of aircrafts 200+ Km
-away from me.
-
-If you are interested in a more serious antenna check the following
-resources:
-
-* http://gnuradio.org/redmine/attachments/download/246/06-foster-adsb.pdf
-* http://www.lll.lu/~edward/edward/adsb/antenna/ADSBantenna.html
-* http://modesbeast.com/pix/adsb-ant-drawing.gif
-
-Aggressive mode
----
-
-With --aggressive it is possible to activate the *aggressive mode* that is a
-modified version of the Mode S packet detection and decoding.
-The aggresive mode uses more CPU usually (especially if there are many planes
-sending DF17 packets), but can detect a few more messages.
-
-The algorithm in aggressive mode is modified in the following ways:
-
-* Up to two demodulation errors are tolerated (adjacent entires in the
-  magnitude vector with the same eight). Normally only messages without
-  errors are checked.
-* It tries to fix DF17 messages with CRC errors resulting from any two bit
-  errors.
-
-The use of aggressive mdoe is only advised in places where there is
-low traffic in order to have a chance to capture some more messages.
-
-Debug mode
----
-
-The Debug mode is a visual help to improve the detection algorithm or to
-understand why the program is not working for a given input.
-
-In this mode messages are displayed in an ASCII-art style graphical
-representation, where the individial magnitude bars sampled at 2Mhz are
-displayed.
-
-An index shows the sample number, where 0 is the sample where the first
-Mode S peak was found. Some additional background noise is also added
-before the first peak to provide some context.
-
-To enable debug mode and check what combinations of packets you can
-log, use `mode1090 --help` to obtain a list of available debug flags.
-
-Debug mode includes an optional javascript output that is used to visualize
-packets using a web browser, you can use the file debug.html under the
-'tools' directory to load the generated frames.js file.
-
-How this program works?
----
-
-The code is very documented and written in order to be easy to understand.
-For the diligent programmer with a Mode S specification on his hands it
-should be trivial to understand how it works.
-
-The algorithms I used were obtained basically looking at many messages
-as displayed using a trow-away SDL program, and trying to model the algorithm
-based on how the messages look graphically.
-
-How to test the program?
----
-
-If you have an RTLSDR device and you happen to be in an area where there
-are aircrafts flying over your head, just run the program and check for signals.
-
-However if you don't have an RTLSDR device, or if in your area the presence
-of aircrafts is very limited, you may want to try the sample file distributed
-with the Dump1090 distribution under the "testfiles" directory.
-
-Just run it like this:
-
-    ./dump1090 --ifile testfiles/modes1.bin
-
-What is --strip mode?
----
-
-It is just a simple filter that will get raw IQ 8 bit samples in input
-and will output a file missing all the parts of the file where I and Q
-are lower than the specified <level> for more than 32 samples.
-
-Use it like this:
-
-    cat big.bin | ./dump1090 --snip 25 > small.bin
-
-I used it in order to create a small test file to include inside this
-program source code distribution.
-
-Contributing
----
-
-Dump1090 was written during some free time during xmas 2012, it is an hobby
-project so I'll be able to address issues and improve it only during
-free time, however you are incouraged to send pull requests in order to
-improve the program. A good starting point can be the TODO list included in
-the source distribution.
-
-Credits
----
-
-Dump1090 was written by Salvatore Sanfilippo <antirez@gmail.com> and is
-released under the BSD three clause license.
+````
+MIRRORSITE=http://mirrordirector.raspbian.org/raspbian/
+PDEBUILD_PBUILDER=cowbuilder
+BASEPATH=/var/cache/pbuilder/armhf-raspbian-wheezy-base.cow
+DISTRIBUTION=wheezy
+OTHERMIRROR="deb http://repo.mutability.co.uk/raspbian wheezy rpi"
+ARCHITECTURE=armhf
+DEBOOTSTRAP=qemu-debootstrap
+DEBOOTSTRAPOPTS="--variant=buildd --keyring=/usr/share/keyrings/raspbian-archive-keyring.gpg"
+COMPONENTS="main contrib non-free rpi"
+EXTRAPACKAGES="eatmydata debhelper fakeroot"
+ALLOWUNTRUSTED="no"
+APTKEYRINGS=("/home/oliver/ppa/mutability.gpg")
+````

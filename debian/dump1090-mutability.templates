@@ -1,0 +1,338 @@
+Template: dump1090-mutability/auto-start
+Description: Start dump1090 automatically?
+ dump1090 can be started automatically via an init-script.
+ Otherwise, the init-script does nothing; you must run dump1090 by hand.
+ .
+ You can modify the options used when automatically starting
+ dump1090 by running "dpkg-reconfigure dump1090-mutability" as root,
+ or by editing /etc/default/dump1090-mutability.
+Type: boolean
+Default: true
+
+Template: dump1090-mutability/run-as-user
+Description: User to run dump1090 as:
+ When started automatically, dump1090 runs as an unprivileged system user. 
+ This user will be created if it does not yet exist.
+Type: string
+Default: dump1090
+
+Template: dump1090-mutability/log-file
+Description: Path to log to:
+ When started automatically, dump1090 will log its output somewhere. This
+ log will contain any startup errors, and periodic statistics reports.
+Type: string
+Default: /var/log/dump1090-mutability.log
+
+Template: dump1090-mutability/rtlsdr-device
+Description: RTL-SDR dongle to use:
+ If you have only one dongle connected, you can leave this blank.
+ .
+ Otherwise, you can provide the serial number (more reliable) or device
+ index (first device = 0, but the ordering is unpredictable) to choose
+ a particular dongle to use.
+ .
+ To run dump1090 in "net only" mode, specify the literal word "none".
+Type: string
+Default:
+
+Template: dump1090-mutability/rtlsdr-gain
+Description: RTL-SDR gain, in dB:
+ The tuner gain used by dump1090 can be provided as a value in dB, or
+ "max" to use the maximum gain available, or "agc" to use the tuner's AGC to
+ control the gain. If unsure, choose "max".
+Type: string
+Default: max
+
+Template: dump1090-mutability/rtlsdr-ppm
+Description: RTL-SDR frequency correction, in PPM:
+ The oscillator in each RTL-SDL dongle is not perfectly accurate. You can
+ choose a correction factor, in parts-per-million, to correct for this. The
+ correction factor varies from dongle to dongle, and also varies with operating
+ temperature. You can find a suitable value with "rtl_test -p" or "kalibrate".
+ If you don't know the value for your dongle, choose 0.
+Type: string
+Default: 0
+
+Template: dump1090-mutability/rtlsdr-oversample
+Description: Enable oversampling at 2.4MHz?
+ Originally, dump1090 would decode incoming signals by sampling at 2MHz. Newer
+ versions also support sampling at 2.4MHz. This may increase the number of
+ decodable messages, but takes slightly more CPU and is not as well tested.
+Type: boolean
+Default: true
+
+Template: dump1090-mutability/decode-fixcrc
+Description: Fix detected CRC errors?
+ dump1090 can fix unambiguous single-bit CRC errors detected in received
+ messages. This allows weaker messages to be decoded. It can slightly increase
+ the rate of undetected errors, but this is not usually significant.
+Type: boolean
+Default: true
+
+Template: dump1090-mutability/decode-phase-enhance
+Description: Apply phase enhancement?
+ dump1090 can attempt to correct for messages that are received
+ out-of-phase from the sampling rate, at the expense of taking more CPU.
+Type: boolean
+Default: true
+
+Template: dump1090-mutability/decode-aggressive
+Description: Aggressively fix more errors?
+ dump1090 can apply more aggressive corrections to received messages,
+ primarily correcting two-bit CRC errors.
+ .
+ Use with caution! This can significantly increase the rate of undetected
+ message errors (i.e. increase the rate of garbled decoded messages)
+Type: boolean
+Default: false
+
+Template: dump1090-mutability/decode-lat
+Description: Latitude of receiver, in decimal degrees:
+ If the location of the receiver is provided, dump1090 can do
+ local position decoding in cases where insufficient position messages are
+ received for unambiguous global position decoding.
+Type: string
+Default:
+
+Template: dump1090-mutability/decode-lon
+Description: Longitude of receiver, in decimal degrees:
+ If the location of the receiver is provided, dump1090 can do
+ local position decoding in cases where insufficient position messages are
+ received for unambiguous global position decoding.
+Type: string
+Default:
+
+Template: dump1090-mutability/decode-max-range
+Description: Absolute maximum range of receiver, in nautical miles:
+ If the maximum range of the receiver is provided, dump1090 can filter
+ out impossible position reports that are due to aircraft that transmit
+ bad data.
+ .
+ Additionally, if the maximum range is larger than 180NM, when local
+ position decoding is used (when insufficient position messages
+ have been received for global position decoding), it is limited to
+ only those positions that would unambiguously decode to a single
+ position within the given receiver range.
+ .
+ This range should be the absolute maximum range - any position data
+ from further away will be entirely discarded!
+Type: string
+Default: 300
+
+Template: dump1090-mutability/net-http-port
+Description: Port for internal webserver (0 disables):
+ dump1090 can provide an internal webserver that serves a basic "virtual
+ radar" map.
+ .
+ It is generally a better idea to use an external webserver, but if you
+ really want to use the internal one, you can select a port to listen
+ on here.
+Type: string
+Default: 0
+
+Template: dump1090-mutability/net-ri-port
+Description: Port for AVR-format input connections (0 disables):
+ dump1090 can accept connections to receive data from other sources in 
+ several formats. This setting controls the port dump1090 will listen
+ on for AVR ("raw") format input connections.
+Type: string
+Default: 30001
+
+Template: dump1090-mutability/net-ro-port
+Description: Port for AVR-format output connections (0 disables):
+ dump1090 can forward ADS-B messages to other software in several formats.
+ This setting controls the port dump1090 will listen on for AVR ("raw")
+ format output connections.
+Type: string
+Default: 30002
+
+Template: dump1090-mutability/net-bi-port
+Description: Port for Beast-format input connections (0 disables):
+ dump1090 can accept connections to receive data from other sources in 
+ several formats. This setting controls the port dump1090 will listen
+ on for Beast ("binary") format input connections.
+Type: string
+Default: 30004
+
+Template: dump1090-mutability/net-bo-port
+Description: Port for Beast-format output connections (0 disables):
+ dump1090 can forward ADS-B messages to other software in several formats.
+ This setting controls the port dump1090 will listen on for Beast ("binary")
+ format output connections.
+Type: string
+Default: 30005
+
+Template: dump1090-mutability/net-sbs-port
+Description: Port for SBS-format output connections (0 disables):
+ dump1090 can forward ADS-B messages to other software in several formats.
+ This setting controls the port dump1090 will listen on for SBS BaseStation
+ format output connections.
+Type: string
+Default: 30003
+
+Template: dump1090-mutability/net-fatsv-port
+Description: Port for FATSV-format output connections (0 disables):
+ dump1090 can forward ADS-B messages to other software in several formats.
+ This setting controls the port dump1090 will listen on for FlightAware TSV
+ format output connections.
+Type: string
+Default: 10001
+
+Template: dump1090-mutability/net-heartbeat
+Description: Seconds between heartbeat messages (0 disables):
+ If there is no other data sent on a network connection, dump1090 can
+ periodically send an empty heartbeat message to ensure that the
+ connection stays established. This setting controls the interval
+ betweeen heartbeat messages.
+Type: string
+Default: 60
+
+Template: dump1090-mutability/net-out-size
+Description: Minimum output message size:
+ To avoid sending many small network messages, output connections will
+ accumulate data waiting to be sent until either a minimum size is reached
+ or a maximum delay is reached. This setting controls the minimum size,
+ in bytes.
+Type: string
+Default: 500
+
+Template: dump1090-mutability/net-out-interval
+Description: Maximum output buffering time:
+ To avoid sending many small network messages, output connections will
+ buffer data waiting to be sent until either a minimum size is reached
+ or a maximum delay is reached. This setting controls the maximum delay,
+ in seconds.
+Type: string
+Default: 1
+
+Template: dump1090-mutability/net-buffer
+Description: SO_SNDBUF size:
+ Here you can specify the TCP send buffer size to use on network connections.
+Type: select
+Choices: 65536, 131072, 262144
+Default: 262144
+
+Template: dump1090-mutability/net-bind-address
+Description: Interface address to bind to (blank for all interfaces):
+ If you want to limit incoming connections to a particular interface,
+ specify the interface address here. A blank value will bind to the wildcard
+ address, allowing connections on all interfaces.
+ .
+ The default value of 127.0.0.1 will allow connections only on localhost,
+ i.e. only connections that originate on the same machine.
+Type: string
+Default: 127.0.0.1
+
+Template: dump1090-mutability/stats-interval
+Description: Interval between logging stats, in seconds:
+ dump1090 will periodically log message reception stats to its logfile.
+ This setting controls how often that is done.
+Type: string
+Default: 3600
+
+Template: dump1090-mutability/json-dir
+Description: Directory to write JSON aircraft state to:
+ As this can be written frequently, you should select a location
+ that is not on a sdcard. The default path under /run is on tmpfs
+ and will not write to the sdcard.
+ .
+ A blank path disables writing JSON state.
+Type: string
+Default: /run/dump1090-mutability
+
+Template: dump1090-mutability/json-interval
+Description: Interval between writing JSON aircraft state, in seconds:
+ dump1090 periodically write a list of aircraft, in JSON format, for use
+ by the virtual radar view when using an external webserver. This setting
+ controls the directory to write to.
+ .
+ Here you can control how often the JSON state is updated, which determines
+ how frequently the virtual radar view updates.
+Type: string
+Default: 1
+
+Template: dump1090-mutability/json-location-accuracy
+Description: Receiver location accuracy to show in the web interface:
+ dump1090 can provide the configured receiver location to the web map,
+ so that the map can show distances from the receiver.
+ .
+ For privacy reasons, if you are making the map publicly available you
+ may not want to show the exact location of the receiver. There are three
+ options available to control what is shown:
+ .
+ approximate: dump1090 will provide the receiver location rounded to the
+   nearest 0.01 degree of latitude and longitude. This gives a location
+   that is accurate to within about 0.5 - 1km.
+ .
+ exact: dump1090 will provide the exact receiver location.
+ .
+ none: dump1090 will not provide the receiver location at all; distance
+   display will be disabled.
+Type: select
+Choices: approximate, exact, none
+Default: approximate
+
+Template: dump1090-mutability/log-decoded-messages
+Description: Log all decoded messages?
+ dump1090 can log all decoded messages as text to the logfile.
+ This can result in a very large logfile! Usually you don't need this.
+Type: boolean
+Default: false
+
+Template: dump1090-mutability/extra-args
+Description: Extra arguments to pass to dump1090:
+ Here you can add any extra arguments you want to pass to dump1090.
+Type: string
+Default:
+
+Template: dump1090-mutability/invalid-is_unsigned_int
+Description: Value must be an unsigned integer.
+Type: error
+
+Template: dump1090-mutability/invalid-is_unsigned_int_or_empty
+Description: Value must be an unsigned integer, or blank.
+Type: error
+
+Template: dump1090-mutability/invalid-is_positive_int
+Description: Value must be a positive integer.
+Type: error
+
+Template: dump1090-mutability/invalid-is_signed_int
+Description: Value must be an integer.
+Type: error
+
+Template: dump1090-mutability/invalid-is_signed_int_or_empty
+Description: Value must be an integer, or blank.
+Type: error
+
+Template: dump1090-mutability/invalid-is_not_empty
+Description: Value cannot be empty.
+Type: error
+
+Template: dump1090-mutability/invalid-is_port_number
+Description: Value must be a valid port number (1024-65535), or zero to disable.
+Type: error
+
+Template: dump1090-mutability/invalid-is_ipaddrish_or_empty
+Description: Value must be an IP address or empty.
+Type: error
+
+Template: dump1090-mutability/invalid-is_number
+Description: Value must be a decimal number
+Type: error
+
+Template: dump1090-mutability/invalid-is_number_or_empty
+Description: Value must be a decimal number or empty.
+Type: error
+
+Template: dump1090-mutability/invalid-is_unsigned_number
+Description: Value must be a non-negative number.
+Type: error
+
+Template: dump1090-mutability/invalid-is_valid_gain
+Description: Value must be a numeric gain value, or "max", or "agc".
+Type: error
+
+Template: dump1090-mutability/invalid-is_non_root_user
+Description: Value must be a username (without spaces) that isn't root.
+Type: error

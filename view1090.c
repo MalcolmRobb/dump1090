@@ -27,13 +27,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-#include "coaa.h"
-#include "view1090.h"
+#include "dump1090.h"
 //
 // ============================= Utility functions ==========================
 //
 void sigintHandler(int dummy) {
-    NOTUSED(dummy);
+    MODES_NOTUSED(dummy);
     signal(SIGINT, SIG_DFL);  // reset signal handler - bit extra safety
     Modes.exit = 1;           // Signal to threads that we are done
 }
@@ -64,18 +63,11 @@ int getTermRows() { return MODES_INTERACTIVE_ROWS;}
 void view1090InitConfig(void) {
     // Default everything to zero/NULL
     memset(&Modes,    0, sizeof(Modes));
-    memset(&View1090, 0, sizeof(View1090));
 
     // Now initialise things that should not be 0/NULL to their defaults
     Modes.check_crc               = 1;
-    strcpy(View1090.net_input_beast_ipaddr,VIEW1090_NET_OUTPUT_IP_ADDRESS); 
-    Modes.net_input_beast_port    = MODES_NET_OUTPUT_BEAST_PORT;
     Modes.interactive_rows        = getTermRows();
-    Modes.interactive_delete_ttl  = MODES_INTERACTIVE_DELETE_TTL;
     Modes.interactive_display_ttl = MODES_INTERACTIVE_DISPLAY_TTL;
-    Modes.fUserLat                = MODES_USER_LATITUDE_DFLT;
-    Modes.fUserLon                = MODES_USER_LONGITUDE_DFLT;
-
     Modes.interactive             = 1;
 }
 //
@@ -83,7 +75,6 @@ void view1090InitConfig(void) {
 //
 void view1090Init(void) {
 
-    pthread_mutex_init(&Modes.pDF_mutex,NULL);
     pthread_mutex_init(&Modes.data_mutex,NULL);
     pthread_cond_init(&Modes.data_cond,NULL);
 
@@ -97,16 +88,6 @@ void view1090Init(void) {
         }
       }
 #endif
-
-    // Allocate the various buffers used by Modes
-    if ( NULL == (Modes.icao_cache = (uint32_t *) malloc(sizeof(uint32_t) * MODES_ICAO_CACHE_LEN * 2)))
-    {
-        fprintf(stderr, "Out of memory allocating data buffer.\n");
-        exit(1);
-    }
-
-    // Clear the buffers that have just been allocated, just in-case
-    memset(Modes.icao_cache, 0,   sizeof(uint32_t) * MODES_ICAO_CACHE_LEN * 2);
 
     // Validate the users Lat/Lon home location inputs
     if ( (Modes.fUserLat >   90.0)  // Latitude must be -90 to +90
@@ -128,45 +109,19 @@ void view1090Init(void) {
     }
 
     // Prepare error correction tables
-    modesInitErrorInfo();
+    modesChecksumInit(Modes.nfix_crc);
+    icaoFilterInit();
 }
 
-// Set up data connection
-int setupConnection(struct client *c) {
-    int fd;
-
-    // Try to connect to the selected ip address and port. We only support *ONE* input connection which we initiate.here.
-    if ((fd = anetTcpConnect(Modes.aneterr, View1090.net_input_beast_ipaddr, Modes.net_input_beast_port)) != ANET_ERR) {
-		anetNonBlock(Modes.aneterr, fd);
-		//
-		// Setup a service callback client structure for a beast binary input (from dump1090)
-		// This is a bit dodgy under Windows. The fd parameter is a handle to the internet
-		// socket on which we are receiving data. Under Linux, these seem to start at 0 and 
-		// count upwards. However, Windows uses "HANDLES" and these don't nececeriy start at 0.
-		// dump1090 limits fd to values less than 1024, and then uses the fd parameter to 
-		// index into an array of clients. This is ok-ish if handles are allocated up from 0.
-		// However, there is no gaurantee that Windows will behave like this, and if Windows 
-		// allocates a handle greater than 1024, then dump1090 won't like it. On my test machine, 
-		// the first Windows handle is usually in the 0x54 (84 decimal) region.
-
-		c->next    = NULL;
-		c->buflen  = 0;
-		c->fd      = 
-		c->service =
-		Modes.bis  = fd;
-		Modes.clients = c;
-    }
-    return fd;
-}
 //
 // ================================ Main ====================================
 //
 void showHelp(void) {
     printf(
 "-----------------------------------------------------------------------------\n"
-"|                        view1090 dump1090 Viewer        Ver : "MODES_DUMP1090_VERSION " |\n"
+"| view1090 ModeS Viewer       %45s |\n"
 "-----------------------------------------------------------------------------\n"
-  "--interactive            Interactive mode refreshing data on screen\n"
+  "--no-interactive         Disable interactive mode, print messages to stdout\n"
   "--interactive-rows <num> Max number of rows in interactive mode (default: 15)\n"
   "--interactive-ttl <sec>  Remove from list if idle for <sec> (default: 60)\n"
   "--interactive-rtl1090    Display flight table in RTL1090 format\n"
@@ -180,51 +135,21 @@ void showHelp(void) {
   "--fix                    Enable single-bits error correction using CRC\n"
   "--aggressive             More CPU for more messages (two bits fixes, ...)\n"
   "--metric                 Use metric units (meters, km/h, ...)\n"
-  "--help                   Show this help\n"
+  "--show-only <addr>       Show only messages from the given ICAO on stdout\n"
+  "--help                   Show this help\n",
+  MODES_DUMP1090_VARIANT " " MODES_DUMP1090_VERSION
     );
 }
 
-#ifdef _WIN32
-void showCopyright(void) {
-    uint64_t llTime = time(NULL) + 1;
-
-    printf(
-"-----------------------------------------------------------------------------\n"
-"|                        view1090 ModeS Viewer           Ver : " MODES_DUMP1090_VERSION " |\n"
-"-----------------------------------------------------------------------------\n"
-"\n"
-" Copyright (C) 2012 by Salvatore Sanfilippo <antirez@gmail.com>\n"
-" Copyright (C) 2014 by Malcolm Robb <support@attavionics.com>\n"
-"\n"
-" All rights reserved.\n"
-"\n"
-" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS\n"
-" ""AS IS"" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT\n"
-" LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR\n"
-" A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT\n"
-" HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,\n"
-" SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT\n"
-" LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,\n"
-" DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY\n"
-" THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT\n"
-" (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE\n"
-" OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n"
-"\n"
-" For further details refer to <https://github.com/MalcolmRobb/dump1090>\n" 
-"\n"
-    );
-
-  // delay for 1 second to give the user a chance to read the copyright
-  while (llTime >= time(NULL)) {}
-}
-#endif
 //
 //=========================================================================
 //
 int main(int argc, char **argv) {
-    int j, fd;
+    int j;
     struct client *c;
-    char pk_buf[8];
+    struct net_service *s;
+    char *bo_connect_ipaddr = "127.0.0.1";
+    int bo_connect_port = MODES_NET_OUTPUT_BEAST_PORT;
 
     // Set sane defaults
 
@@ -236,17 +161,20 @@ int main(int argc, char **argv) {
         int more = ((j + 1) < argc); // There are more arguments
 
         if        (!strcmp(argv[j],"--net-bo-port") && more) {
-            Modes.net_input_beast_port = atoi(argv[++j]);
+            bo_connect_port = atoi(argv[++j]);
         } else if (!strcmp(argv[j],"--net-bo-ipaddr") && more) {
-            strcpy(View1090.net_input_beast_ipaddr, argv[++j]);
+            bo_connect_ipaddr = argv[++j];
         } else if (!strcmp(argv[j],"--modeac")) {
             Modes.mode_ac = 1;
         } else if (!strcmp(argv[j],"--interactive-rows") && more) {
             Modes.interactive_rows = atoi(argv[++j]);
-        } else if (!strcmp(argv[j],"--interactive")) {
-            Modes.interactive = 1;
+        } else if (!strcmp(argv[j],"--no-interactive")) {
+            Modes.interactive = 0;
+        } else if (!strcmp(argv[j],"--show-only") && more) {
+            Modes.show_only = (uint32_t) strtoul(argv[++j], NULL, 16);
+            Modes.interactive = 0;
         } else if (!strcmp(argv[j],"--interactive-ttl") && more) {
-            Modes.interactive_display_ttl = atoi(argv[++j]);
+            Modes.interactive_display_ttl = (uint64_t)(1000 * atof(argv[++j]));
         } else if (!strcmp(argv[j],"--interactive-rtl1090")) {
             Modes.interactive = 1;
             Modes.interactive_rtl1090 = 1;
@@ -287,32 +215,34 @@ int main(int argc, char **argv) {
 
     // Initialization
     view1090Init();
+    modesInitNet();
 
     // Try to connect to the selected ip address and port. We only support *ONE* input connection which we initiate.here.
-    c = (struct client *) malloc(sizeof(*c));
-    if ((fd = setupConnection(c)) == ANET_ERR) {
-        fprintf(stderr, "Failed to connect to %s:%d\n", View1090.net_input_beast_ipaddr, Modes.net_input_beast_port);
+    s = makeBeastInputService();
+    c = serviceConnect(s, bo_connect_ipaddr, bo_connect_port);
+    if (!c) {
+        fprintf(stderr, "Failed to connect to %s:%d: %s\n", bo_connect_ipaddr, bo_connect_port, Modes.aneterr);
         exit(1);
     }
 
     // Keep going till the user does something that stops us
     while (!Modes.exit) {
-        interactiveRemoveStaleAircrafts();
-        interactiveShowData();
-        if ((fd == ANET_ERR) || (recv(c->fd, pk_buf, sizeof(pk_buf), MSG_PEEK | MSG_DONTWAIT) == 0)) {
-			free(c);
-			usleep(1000000);
-			c = (struct client *) malloc(sizeof(*c));
-			fd = setupConnection(c);
-			continue;
-        }
-        modesReadFromClient(c,"",decodeBinMessage);
-		usleep(100000);
-    }
+        icaoFilterExpire();
+        trackPeriodicUpdate();
+        modesNetPeriodicWork();
 
-    // The user has stopped us, so close any socket we opened
-    if (fd != ANET_ERR) 
-      {close(fd);}
+        if (Modes.interactive)
+            interactiveShowData();
+
+        if (s->connections == 0) {
+            // lost input connection, try to reconnect
+            usleep(1000000);
+            c = serviceConnect(s, bo_connect_ipaddr, bo_connect_port);
+            continue;
+        }
+
+        usleep(100000);
+    }
 
     return (0);
 }
