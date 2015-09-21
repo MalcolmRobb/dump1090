@@ -188,6 +188,8 @@ void modesInit(void) {
     // Prepare error correction tables
     modesInitErrorInfo();
 }
+
+#ifndef NORTLSDR
 //
 // =============================== RTLSDR handling ==========================
 //
@@ -286,6 +288,8 @@ void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
     pthread_cond_signal(&Modes.data_cond);
     pthread_mutex_unlock(&Modes.data_mutex);
 }
+#endif
+
 //
 //=========================================================================
 //
@@ -351,9 +355,11 @@ void *readerThreadEntryPoint(void *arg) {
     MODES_NOTUSED(arg);
 
     if (Modes.filename == NULL) {
+#ifndef NORTLSDR
         rtlsdr_read_async(Modes.dev, rtlsdrCallback, NULL,
                               MODES_ASYNC_BUF_NUMBER,
                               MODES_ASYNC_BUF_SIZE);
+#endif
     } else {
         readDataFromFile();
     }
@@ -595,6 +601,8 @@ void backgroundTasks(void) {
         }
     }
 }
+
+#ifndef NORTLSDR
 //
 //=========================================================================
 //
@@ -657,6 +665,8 @@ int verbose_device_search(char *s)
 	fprintf(stderr, "No matching devices found.\n");
 	return -1;
 }
+#endif
+
 //
 //=========================================================================
 //
@@ -672,7 +682,11 @@ int main(int argc, char **argv) {
         int more = j+1 < argc; // There are more arguments
 
         if (!strcmp(argv[j],"--device-index") && more) {
+#ifndef NORTLSDR
             Modes.dev_index = verbose_device_search(argv[++j]);
+#else
+            assert(!"Compiled without librtlsdr support");
+#endif
         } else if (!strcmp(argv[j],"--gain") && more) {
             Modes.gain = (int) (atof(argv[++j])*10); // Gain is in tens of DBs
         } else if (!strcmp(argv[j],"--enable-agc")) {
@@ -803,7 +817,11 @@ int main(int argc, char **argv) {
     if (Modes.net_only) {
         fprintf(stderr,"Net-only mode, no RTL device or file open.\n");
     } else if (Modes.filename == NULL) {
+#ifndef NORTLSDR
         modesInitRTLSDR();
+#else
+        assert(!"Compiled without librtlsdr support");
+#endif
     } else {
         if (Modes.filename[0] == '-' && Modes.filename[1] == '\0') {
             Modes.fd = STDIN_FILENO;
@@ -886,9 +904,11 @@ int main(int argc, char **argv) {
         display_stats();
     }
 
-    if (Modes.filename == NULL) {
+    if (Modes.filename == NULL && !Modes.net_only) {
+#ifndef NORTLSDR
         rtlsdr_cancel_async(Modes.dev);  // Cancel rtlsdr_read_async will cause data input thread to terminate cleanly
         rtlsdr_close(Modes.dev);
+#endif
     }
     pthread_cond_destroy(&Modes.data_cond);     // Thread cleanup
     pthread_mutex_destroy(&Modes.data_mutex);

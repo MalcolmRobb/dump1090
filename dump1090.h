@@ -57,7 +57,10 @@
     #include <ctype.h>
     #include <sys/stat.h>
     #include <sys/ioctl.h>
+    #include <assert.h>
+#ifndef NORTLSDR
     #include "rtl-sdr.h"
+#endif
     #include "anet.h"
 #else
     #include "winstubs.h" //Put everything Windows specific in here
@@ -263,7 +266,9 @@ struct {                             // Internal state
     int           dev_index;
     int           gain;
     int           enable_agc;
+#ifndef NORTLSDR
     rtlsdr_dev_t *dev;
+#endif
     int           freq;
     int           ppm_error;
 
