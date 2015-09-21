@@ -51,10 +51,6 @@
     #include <sys/stat.h>
     #include <sys/types.h>
     #include <sys/socket.h>
-    #include <assert.h>
-#ifndef NORTLSDR
-    #include "rtl-sdr.h"
-#endif
     #include "anet.h"
 #else
     #include "winstubs.h" //Put everything Windows specific in here
