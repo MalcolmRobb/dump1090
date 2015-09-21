@@ -10,8 +10,19 @@ SHAREDIR=$(PREFIX)/share/$(PROGNAME)
 EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
 endif
 
-CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
-LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
+# Set NORTLSDR to compile without librtlsdr e.g. "make NORTLSDR=1"
+ifndef NORTLSDR
+ifeq ($(shell pkg-config --exists librtlsdr || echo "F"), F)
+$(warning librtlsdr not found - please install it, or build with "NORTLSDR=1" to build with RTL SDR support.)
+endif
+RTLSDR_CFLAGS=$(shell pkg-config --cflags librtlsdr)
+RTLSDR_LDFLAGS=$(shell pkg-config --libs librtlsdr)
+else
+RTLSDR_CFLAGS=-DNORTLSDR
+endif
+
+CFLAGS=-O2 -g -Wall -W $(RTLSDR_CFLAGS)
+LDFLAGS+=$(RTLSDR_LDFLAGS) -lpthread -lm
 CC=gcc
 
 
