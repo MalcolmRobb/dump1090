@@ -27,6 +27,9 @@ Installation
 
 Type "make".
 
+To compile without RTL SDR support (your binaries will only be useable for
+network operations), run "make NORTLSDR=1" instead.
+
 Normal usage
 ---
 
