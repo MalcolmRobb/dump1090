@@ -53,6 +53,16 @@ In iteractive mode it is possible to have a less information dense but more
 all the recently seen aircrafts with some additional information such as
 altitude and flight number, extracted from the received Mode S packets.
 
+When using network server mode, you can quickly set your "home" location
+using Google Maps' address resolution by passing a ```--home``` string
+argument:
+
+    ./dump1090 --interactive --home "1600 Pennsylvania Ave NW, Washington, DC 20500"
+
+This will center the map, draw a general radar indicator, and use this
+base for calculating directionality and distance from you to the various
+transponders on the map.
+
 Using files as source of data
 ---
 
