@@ -322,6 +322,7 @@ struct {                             // Internal state
     // User details
     double fUserLat;                // Users receiver/antenna lat/lon needed for initial surface location
     double fUserLon;                // Users receiver/antenna lat/lon needed for initial surface location
+	char   *home;                   // Address lookup for net:map interface.
     int    bUserFlags;              // Flags relating to the user details
 
     // Interactive mode

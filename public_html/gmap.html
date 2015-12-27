@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 	<head>
 		<meta charset="utf-8"/>
@@ -14,9 +15,9 @@
 		<script type="text/javascript" src="coolclock/excanvas.js"></script>
 		<script type="text/javascript" src="coolclock/coolclock.js"></script>
 		<script type="text/javascript" src="coolclock/moreskins.js"></script>
-        <title>DUMP1090</title>
+		<title>DUMP1090</title>
 	</head>
-	<body onload="initialize()">
+	<body onload="initialize();">
 		<div id="dialog-modal" title="Basic modal dialog" style="display:none;">
 			<p>The settings feature is coming soon. Keep checking GitHub.</p>
 		</div>
@@ -26,29 +27,24 @@
 		<div id="sidebar_container">
 			<div id="sidebar_canvas">
 				<div id="timestamps" style="align: center">
-					<table width="100%"><tr>
+					<table style="width:100%;"><tr>
 						<td>Local Time</td>
-						<td>
-							<canvas id="localclock" class="CoolClock:classic:40"></canvas>
-						</td>
+						<td><canvas id="localclock" class="CoolClock:classic:40"></canvas></td>
 						<td>UTC Time</td>
-						<td>
-							<canvas id="gmtclock" class="CoolClock:classic:40::0"></canvas>
-						</td>
+						<td><canvas id="gmtclock" class="CoolClock:classic:40::0"></canvas></td>
 					</tr></table>
 				</div>
 				<div id="sudo_buttons">
-					<table width="100%"><tr>
-						<td width="150" style="text-align: center;" class="pointer">
+					<table style="width:100%;"><tr>
+						<td style="width:150px;" class="pointer">
 						    [ <span onclick="resetMap();">Reset Map</span> ]
 						</td>
-						<td>&nbsp;</td>
-						<td width="150" style="text-align: center;" id="setings_button" class="pointer">
+						<td id="dx"></td>
+						<td style="width:150px;" id="setings_button" class="pointer">
 						    [ <span onclick="optionsModal();">Settings</span> ]
 						</td>
 					</tr></table>
 				</div>
-
 				<div id="plane_detail"></div>
 				<div id="options"></div>
 				<div id="planes_table"></div>
@@ -57,9 +53,13 @@
 		</div>
 		<div id="SpecialSquawkWarning">
 		    <b>Squak 7x00 is reported and shown.</b><br>
-            This is most likely an error in reciving or decoding.<br>
-            Please do not call the local authorities, they already know about it if it is valid squak.
+			This is most likely an error in reciving or decoding.<br>
+			Please do not call the local authorities, they already know about it if it is valid squak.
 		</div>
 		<div id="container_splitter"></div>
+		<form name="airframes_org" id="airframes_org" target="_blank" method="POST" action="http://www.airframes.org/">
+			<input type="hidden" name="ica024" id="airframes_ica024" value=""/>
+			<input type="hidden" name="submit" value="submit"/>
+		</form>
 	</body>
 </html>

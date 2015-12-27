@@ -15,6 +15,7 @@ table#optionsTabs { width: 100%; font-size: small; font-family: monospace; backg
     border: 1px; border-color: #000000;}
 
 #tableinfo, #sudo_buttons { font-size: x-small; font-family: monospace; }
+#sudo_buttons td { text-align: center; }
 
 .vPosition  { font-weight: bold; background-color: #d5ffd5; }
 .squawk7500 { font-weight: bold; background-color: #ff5555; }
