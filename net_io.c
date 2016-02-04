@@ -697,6 +697,79 @@ char *aircraftsToJson(int *len) {
 //
 //=========================================================================
 //
+// Return a description of planes in json. No metric conversion
+//
+char *aircraftsToGeoJson(int *len) {
+    time_t now = time(NULL);
+    struct aircraft *a = Modes.aircrafts;
+    int buflen = 1024; // The initial buffer is incremented as needed
+    char *buf = (char *) malloc(buflen), *p = buf;
+    int l;
+
+    l = snprintf(p,buflen,"{ \"type\": \"FeatureCollection\", \"features\": [\n");
+    p += l; buflen -= l;
+    while(a) {
+        int position = 0;
+        int track = 0;
+
+        if (a->modeACflags & MODEAC_MSG_FLAG) { // skip any fudged ICAO records Mode A/C
+            a = a->next;
+            continue;
+        }
+
+        if (a->bFlags & MODES_ACFLAGS_LATLON_VALID) {
+            position = 1;
+        }
+        
+        if (a->bFlags & MODES_ACFLAGS_HEADING_VALID) {
+            track = 1;
+        }
+        
+        // No metric conversion
+        l = snprintf(p,buflen,
+            "{\"type\":\"Feature\", \"properties\": { \"hex\":\"%06x\", \"squawk\":\"%04x\", \"callsign\":\"%s\"," 
+			"\"validposition\":%d, \"altitude\":%d,  \"vert_rate\":%d,\"track\":%d, \"validtrack\":%d,"
+            "\"speed\":%d, \"messages\":%ld, \"seen\":%d }, \"geometry\": { \"type\": \"Point\", \"coordinates\": [%f,%f]} },\n",
+            a->addr, a->modeA, a->flight, position, a->altitude, a->vert_rate, a->track, track,
+            a->speed, a->messages, (int)(now - a->seen), a->lon, a->lat);
+			/*
+		l = snprintf(p,buflen,
+            "{\"hex\":\"%06x\", \"squawk\":\"%04x\", \"flight\":\"%s\", \"lat\":%f, "
+            "\"lon\":%f, \"validposition\":%d, \"altitude\":%d,  \"vert_rate\":%d,\"track\":%d, \"validtrack\":%d,"
+            "\"speed\":%d, \"messages\":%ld, \"seen\":%d},\n",
+            a->addr, a->modeA, a->flight, a->lat, a->lon, position, a->altitude, a->vert_rate, a->track, track,
+            a->speed, a->messages, (int)(now - a->seen));
+		*/
+        p += l; buflen -= l;
+        
+        //Resize if needed
+        if (buflen < 256) {
+            int used = p-buf;
+            buflen += 1024; // Our increment.
+            buf = (char *) realloc(buf,used+buflen);
+            p = buf+used;
+        }
+        
+        a = a->next;
+    }
+
+    //Remove the final comma if any, and closes the json array.
+    if (*(p-2) == ',') {
+        *(p-2) = '\n';
+        p--;
+        buflen++;
+    }
+
+    l = snprintf(p,buflen,"]}\n");
+    p += l; buflen -= l;
+
+    *len = p-buf;
+    return buf;
+}
+
+//
+//=========================================================================
+//
 #define MODES_CONTENT_TYPE_HTML "text/html;charset=utf-8"
 #define MODES_CONTENT_TYPE_CSS  "text/css;charset=utf-8"
 #define MODES_CONTENT_TYPE_JSON "application/json;charset=utf-8"
@@ -755,11 +828,16 @@ int handleHTTPRequest(struct client *c, char *p) {
     // Select the content to send, we have just two so far:
     // "/" -> Our google map application.
     // "/data.json" -> Our ajax request to update planes.
+	
     if (strstr(url, "/data.json")) {
         statuscode = 200;
         content = aircraftsToJson(&clen);
         //snprintf(ctype, sizeof ctype, MODES_CONTENT_TYPE_JSON);
-    } else {
+    } else if (strstr(url, "/geodata.json")) {
+        statuscode = 200;
+        content = aircraftsToGeoJson(&clen);
+	}
+    else {
         struct stat sbuf;
         int fd = -1;
         char *rp, *hrp;
