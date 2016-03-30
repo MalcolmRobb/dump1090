@@ -10,8 +10,8 @@ SHAREDIR=$(PREFIX)/share/$(PROGNAME)
 EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
 endif
 
-CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
-LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
+CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr libusb-1.0`
+LIBS=`pkg-config --libs librtlsdr libusb-1.0` -lpthread -lm
 CC=gcc
 
 
