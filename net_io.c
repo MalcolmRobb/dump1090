@@ -781,6 +781,12 @@ int handleHTTPRequest(struct client *c, char *p) {
             errno = ENOENT;
         }
 
+        if (rp)
+            free(rp);
+
+        if (hrp)
+            free(hrp);
+
         if (clen < 0) {
             content = realloc(content, 128);
             clen = snprintf(content, 128,"Error opening HTML file: %s", strerror(errno));
