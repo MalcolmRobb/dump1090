@@ -1166,8 +1166,10 @@ void displayModesMessage(struct modesMessage *mm) {
     printf(";\n");
 
     if (Modes.raw) {
-        fflush(stdout); // Provide data to the reader ASAP
-        return;         // Enough for --raw mode
+        if(fflush(stdout) == 0) // Provide data to the reader ASAP
+            return;             // Enough for --raw mode
+        else
+            exit(1);            // fflush error should exit
     }
 
     if (mm->msgtype < 32)
