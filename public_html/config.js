@@ -32,3 +32,7 @@ SiteCircles = true; // true or false (Only shown if SiteShow is true)
 // In nautical miles or km (depending settings value 'Metric')
 SiteCirclesDistances = new Array(100,150,200);
 
+// -- Map Features ---------------------------------------
+DisplayRadar = 0;
+// The FQDN to your server
+RadarKmlFqdn = "";

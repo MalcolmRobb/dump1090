@@ -17,3 +17,19 @@ function extendedInitalize() {
 function extendedPulse() {
 	// This will get called every second after all the main functions
 }
+
+function toggleRadar() {
+        if (DisplayRadar == 1) {
+            DisplayRadar = 0;
+            kmlLayer.setMap(null);
+        } else {
+            DisplayRadar = 1;
+            var kmlUrl = 'http://' + RadarKmlFqdn + '/latest_radaronly_Radar_data.kml'; // Modified NWS CONUS KML file
+            var kmlOptions = {
+                suppressInfoWindows: true,
+                preserveViewport: true,
+                map: GoogleMap
+            };
+            kmlLayer = new google.maps.KmlLayer(kmlUrl, kmlOptions);
+        }
+}

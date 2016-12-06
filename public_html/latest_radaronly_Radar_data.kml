@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+        <GroundOverlay>
+            <name>NWS CONUS Radar Image</name>
+            <Icon>
+                <href>http://radar.weather.gov/ridge/Conus/RadarImg/latest_radaronly.gif</href>
+            </Icon>
+            <visibility>1</visibility>
+            <LatLonBox>
+                <north>50.406626367301044</north>
+                <south>21.652538062803</south>
+                <east>-66.517937876818</east>
+                <west>-127.620375523875420</west>
+            </LatLonBox>
+        </GroundOverlay>
+    </Document>
+</kml>
