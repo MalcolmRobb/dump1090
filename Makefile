@@ -15,7 +15,10 @@ LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 CC=gcc
 
 
-all: dump1090 view1090
+all: librtlsdrReady dump1090 view1090
+
+librtlsdrReady: 
+	sudo apt install librtlsdr-dev
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(EXTRACFLAGS) -c $<
