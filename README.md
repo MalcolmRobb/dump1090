@@ -48,6 +48,11 @@ with your browser to http://localhost:8080 to see live traffic:
 
     ./dump1090 --interactive --net
 
+_Google Maps v3 requires an API key which can be created at 
+[https://developers.google.com/maps/documentation/javascript/get-api-key](https://developers.google.com/maps/documentation/javascript/get-api-key), 
+once obtained, this needs adding into the `gmap.html` file in the 
+`INSERT_YOUR_API_KEY_HERE` placeholder (line 8)._
+
 In iteractive mode it is possible to have a less information dense but more
 "arcade style" output, where the screen is refreshed every second displaying
 all the recently seen aircrafts with some additional information such as
