@@ -1,3 +1,7 @@
+// Keep all this because this is the information
+// we get from DUMP1090s JSON response.
+
+// TODO: MAPBOX all "this." objects need to be converted to Mapbox objects,
 var planeObject = {
 	oldlat		: null,
 	oldlon		: null,
@@ -36,22 +40,24 @@ var planeObject = {
 	reapable	: false,
 
 	// Appends data to the running track so we can get a visual tail on the plane
-	// Only useful for a long running browser session.
+    // Only useful for a long running browser session.
+    // TODO: We may be able to do 3D visualization by using a MercatorCoordinate (takes x, y, z)!
 	funcAddToTrack	: function(){
-			// TODO: Write this function out
-			this.trackdata.push([this.latitude, this.longitude, this.altitude, this.track, this.speed]);
-			this.trackline.push(new google.maps.LatLng(this.latitude, this.longitude));
+            this.trackdata.push([this.latitude, this.longitude, this.altitude, this.track, this.speed]);
+            this.trackline.push(new mapboxgl.LngLat(this.longitude, this.latitude));
 		},
 
-	// This is to remove the line from the screen if we deselect the plane
+    // This is to remove the line from the screen if we deselect the plane
 	funcClearLine	: function() {
-			if (this.line) {
-				this.line.setMap(null);
-				this.line = null;
+			if (map.getSource(this.icao)) {
+                // sets the geoJSON lines coordinate array to an empty array
+                // might not work
+                map.getSource(this.icao).setData({'coordinates':[]})
 			}
 		},
 
-	// Should create an icon for us to use on the map...
+    // Should create an icon for us to use on the map...
+    // TODO: determine how/where to use this function
 	funcGetIcon	: function() {
 			this.markerColor = MarkerColor;
 			// If this marker is selected we should make it lighter than the rest.
@@ -113,13 +119,16 @@ var planeObject = {
 			// If we have not overwritten color by now, an extension still could but
 			// just keep on trucking.  :)
 
+            // determine what's needed in this returned obj later
 			return {
                 strokeWeight: (this.is_selected ? 2 : 1),
                 path:  "M 0,0 "+ baseSvg["planeData"],
                 scale: 0.4,
                 fillColor: this.markerColor,
-                fillOpacity: 0.9,
-                anchor: new google.maps.Point(32, 32), // Set anchor to middle of plane.
+				fillOpacity: 0.9,
+                // TODO: MAPBOX point, I don't know if this works, like at all.
+                anchor: new mapboxgl.Point(32, 32), // Set anchor to middle of plane.
+                // anchor: new google.maps.Point(32, 32), // Set anchor to middle of plane.
                 rotation: this.track
             };
 		},
@@ -150,16 +159,16 @@ var planeObject = {
 			this.seen	= data.seen;
 
 			// If no packet in over 58 seconds, consider the plane reapable
-			// This way we can hold it, but not show it just in case the plane comes back
+            // This way we can hold it, but not show it just in case the plane comes back
+            // TODO: reap marker in MAPBOX.
 			if (this.seen > 58) {
 				this.reapable = true;
 				if (this.marker) {
-					this.marker.setMap(null);
-					this.marker = null;
+					this.marker.remove();
 				}
-				if (this.line) {
-					this.line.setMap(null);
-					this.line = null;
+				if (map.getSource(this.icao)) {
+                    // may break
+                    funcClearLine()
 				}
 				if (SelectedPlane == this.icao) {
 					if (this.is_selected) {
@@ -194,7 +203,8 @@ var planeObject = {
 				if ((changeLat == true) || (changeLon == true)) {
 					this.funcAddToTrack();
 					if (this.is_selected) {
-						this.line = this.funcUpdateLines();
+                        // may break
+						this.funcUpdateLines();
 					}
 				}
 				this.marker = this.funcUpdateMarker();
@@ -210,51 +220,78 @@ var planeObject = {
 				this.vTrack = false;
 		},
 
-	// Update our marker on the map
+    // Update our marker on the map
+    // For now I will disregard custom markers; it seems messy.
+    // TODO: make a MAPBOX marker, ICON AND CLICKABLE EVENTS
 	funcUpdateMarker: function() {
 			if (this.marker) {
-				this.marker.setPosition(new google.maps.LatLng(this.latitude, this.longitude));
-				this.marker.setIcon(this.funcGetIcon());
+                this.marker.setLngLat(this.longitude, this.latitude);
 			} else {
-				this.marker = new google.maps.Marker({
-					position: new google.maps.LatLng(this.latitude, this.longitude),
-					map: GoogleMap,
-					icon: this.funcGetIcon(),
-					visable: true
-				});
+                var el = document.createElement('div');
+                el.className = 'marker';
+                
+                this.marker = new mapboxgl.Marker()
+                                  .setLngLat([this.longitude, this.latitude])
+                                  .addTo(map)
 
-				// This is so we can match icao address
+                // This is so we can match icao address
+                // why does this matter? what does this even do?
 				this.marker.icao = this.icao;
 
-				// Trap clicks for this marker.
-				google.maps.event.addListener(this.marker, 'click', this.funcSelectPlane);
+                // Trap clicks for this marker.
+                // TODO add a click handler
+				// google.maps.event.addListener(this.marker, 'click', this.funcSelectPlane);
 			}
 
-			// Setting the marker title
-			if (this.flight.length == 0) {
+            // Setting the marker title
+            // Mapbox markers don't have this, so I don't think this is needed
+            // Maybe I can do this in a GeoJSON format and load it later.
+			/*if (this.flight.length == 0) {
 				this.marker.setTitle(this.hex);
 			} else {
 				this.marker.setTitle(this.flight+' ('+this.icao+')');
-			}
-			return this.marker;
+			}*/
+			return this.marker
 		},
 
 	// Update our planes tail line,
-	// TODO: Make this multi colored based on options
-	//		altitude (default) or speed
+
 	funcUpdateLines: function() {
-			if (this.line) {
-				var path = this.line.getPath();
-				path.push(new google.maps.LatLng(this.latitude, this.longitude));
-			} else {
-				this.line = new google.maps.Polyline({
-					strokeColor: '#000000',
-					strokeOpacity: 1.0,
-					strokeWeight: 3,
-					map: GoogleMap,
-					path: this.trackline
-				});
-			}
-			return this.line;
-		}
+        // if a line exists already, update it
+        // otherwise create a new layer
+
+        if (map.getSource(this.icao)) {
+            var plane = map.getSource(this.icao)
+            newLine = plane['coordinates'].push(new mapboxgl.LngLat(this.longitude, this.latitude))
+            // TODO: update line somehow, I don't know if what I wrote will work
+            plane.setData(newLine)
+        } else {
+            // Create the map in script.js, but refer to it here.
+            map.on('load', function () {
+                map.addLayer({
+                    "id": this.icao,
+                    "type": "line",
+                    "source": {
+                        "type": "geojson",
+                        "data": {
+                            "type": "Feature",
+                            "properties": {}, // maybe eventually give the length of a line? 
+                            "geometry": {
+                                "type": "LineString",
+                                "coordinates": this.track
+                            }
+                        }
+                    },
+                    "layout": {
+                        "line-join": "round",
+                        "line-cap": "round"
+                    },
+                    "paint": {
+                        "line-color": "#33f",
+                        "line-width": 3
+                    }
+                });
+            });
+        }
+    }
 };
