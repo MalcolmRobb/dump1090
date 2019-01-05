@@ -1,5 +1,5 @@
 // Define our global variables
-var GoogleMap     = null;
+var map           = null;
 var Planes        = {};
 var PlanesOnMap   = 0;
 var PlanesOnTable = 0;
@@ -17,6 +17,7 @@ CenterLat = Number(localStorage['CenterLat']) || CONST_CENTERLAT;
 CenterLon = Number(localStorage['CenterLon']) || CONST_CENTERLON;
 ZoomLvl   = Number(localStorage['ZoomLvl']) || CONST_ZOOMLVL;
 
+// create/update MAPBOX markers in here!
 function fetchData() {
 	$.getJSON('/dump1090/data.json', function(data) {
 		PlanesOnMap = 0
@@ -29,6 +30,7 @@ function fetchData() {
 			if (Planes[data[j].hex]) {
 				var plane = Planes[data[j].hex];
 			} else {
+				// TODO: look at jQuery.extend
 				var plane = jQuery.extend(true, {}, planeObject);
 			}
 			
@@ -43,9 +45,11 @@ function fetchData() {
             }
 
 			// Call the function update
-			plane.funcUpdateData(data[j]);
+            plane.funcUpdateData(data[j]);
+            
+            // do we create the marker DOM object here or in planeObject?
 			
-			// Copy the plane into Planes
+			// Copy the plane into Planes dictionary
 			Planes[plane.icao] = plane;
 		}
 
@@ -56,15 +60,18 @@ function fetchData() {
 // Initalizes the map and starts up our timers to call various functions
 function initialize() {
 	// Make a list of all the available map IDs
+	// so I have no idea what these are, I guess the map styles?
 	var mapTypeIds = [];
 	for(var type in google.maps.MapTypeId) {
 		mapTypeIds.push(google.maps.MapTypeId[type]);
 	}
 	// Push OSM on to the end
+	// OSM must be open street map, so maybe mapbox has these too
 	mapTypeIds.push("OSM");
 	mapTypeIds.push("dark_map");
 
 	// Styled Map to outline airports and highways
+	// Might take some of these, but i think my map will be pretty different
 	var styles = [
 		{
 			"featureType": "administrative",
@@ -127,69 +134,45 @@ function initialize() {
 		}
 	]
 
-	// Add our styled map
-	var styledMap = new google.maps.StyledMapType(styles, {name: "Dark Map"});
-
-	// Define the Google Map
-	var mapOptions = {
-		center: new google.maps.LatLng(CenterLat, CenterLon),
-		zoom: ZoomLvl,
-		mapTypeId: google.maps.MapTypeId.ROADMAP,
-		mapTypeControl: true,
-		streetViewControl: false,
-		mapTypeControlOptions: {
-			mapTypeIds: mapTypeIds,
-			position: google.maps.ControlPosition.TOP_LEFT,
-			style: google.maps.MapTypeControlStyle.DROPDOWN_MENU
-		}
-	};
-
-	GoogleMap = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
-
-	//Define OSM map type pointing at the OpenStreetMap tile server
-	GoogleMap.mapTypes.set("OSM", new google.maps.ImageMapType({
-		getTileUrl: function(coord, zoom) {
-			return "http://tile.openstreetmap.org/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
-		},
-		tileSize: new google.maps.Size(256, 256),
-		name: "OpenStreetMap",
-		maxZoom: 18
-	}));
-
-	GoogleMap.mapTypes.set("dark_map", styledMap);
+    map = new mapboxgl.Map({
+        container: 'map_canvas',
+        style: 'mapbox://styles/mapbox/light-v9',
+        center: mapOptions.center,
+        zoom: mapOptions.zoom
+      });
 	
 	// Listeners for newly created Map
     google.maps.event.addListener(GoogleMap, 'center_changed', function() {
         localStorage['CenterLat'] = GoogleMap.getCenter().lat();
         localStorage['CenterLon'] = GoogleMap.getCenter().lng();
     });
-    
     google.maps.event.addListener(GoogleMap, 'zoom_changed', function() {
         localStorage['ZoomLvl']  = GoogleMap.getZoom();
     }); 
 	
-	// Add home marker if requested
-	if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined')) {
-	    var siteMarker  = new google.maps.LatLng(SiteLat, SiteLon);
-	    var markerImage = new google.maps.MarkerImage(
-	        'http://maps.google.com/mapfiles/kml/pal4/icon57.png',
-            new google.maps.Size(32, 32),   // Image size
-            new google.maps.Point(0, 0),    // Origin point of image
-            new google.maps.Point(16, 16)); // Position where marker should point 
-	    var marker = new google.maps.Marker({
-          position: siteMarker,
-          map: GoogleMap,
-          icon: markerImage,
-          title: 'My Radar Site',
-          zIndex: -99999
-        });
+    // Add home marker if requested
+    // Forget this for now
+	// if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined')) {
+	//     var siteMarker  = new google.maps.LatLng(SiteLat, SiteLon);
+	//     var markerImage = new google.maps.MarkerImage(
+	//         'http://maps.google.com/mapfiles/kml/pal4/icon57.png',
+    //         new google.maps.Size(32, 32),   // Image size
+    //         new google.maps.Point(0, 0),    // Origin point of image
+    //         new google.maps.Point(16, 16)); // Position where marker should point 
+	//     var marker = new google.maps.Marker({
+    //       position: siteMarker,
+    //       map: GoogleMap,
+    //       icon: markerImage,
+    //       title: 'My Radar Site',
+    //       zIndex: -99999
+    //     });
         
-        if (SiteCircles) {
-            for (var i=0;i<SiteCirclesDistances.length;i++) {
-              drawCircle(marker, SiteCirclesDistances[i]); // in meters
-            }
-        }
-	}
+    //     if (SiteCircles) {
+    //         for (var i=0;i<SiteCirclesDistances.length;i++) {
+    //           drawCircle(marker, SiteCirclesDistances[i]); // in meters
+    //         }
+    //     }
+	// }
 	
 	// These will run after page is complitely loaded
 	$(window).load(function() {
@@ -322,10 +305,12 @@ function refreshSelected() {
 	    
 	    // Let's show some extra data if we have site coordinates
 	    if (SiteShow) {
-            var siteLatLon  = new google.maps.LatLng(SiteLat, SiteLon);
-            var planeLatLon = new google.maps.LatLng(selected.latitude, selected.longitude);
-            var dist = google.maps.geometry.spherical.computeDistanceBetween (siteLatLon, planeLatLon);
-            
+            var siteLatLon  = new mapboxgl.LngLat(SiteLon, SiteLat)
+            var planeLatLon = new mapboxgl.LngLat(selected.longitude, selected.latitude)
+            // TODO: Find Mapbox equiv of this:
+            // var dist = google.maps.geometry.spherical.computeDistanceBetween (siteLatLon, planeLatLon);
+            var dist = 0
+
             if (Metric) {
                 dist /= 1000;
             } else {
@@ -432,7 +417,7 @@ function refreshTableInfo() {
 			if (tableplane.squawk == 7600) {
 				specialStyle += " squawk7600";
 			}
-			// Emergancy
+			// Emergency
 			if (tableplane.squawk == 7700) {
 				specialStyle += " squawk7700";
 			}
@@ -462,9 +447,11 @@ function refreshTableInfo() {
                         if (SiteShow && (typeof SiteLat !==  'undefined' || typeof SiteLon !==  'undefined')) {
                         html += '<td align="right">';
                             if (tableplane.vPosition) {
-                                var siteLatLon  = new google.maps.LatLng(SiteLat, SiteLon);
-                                var planeLatLon = new google.maps.LatLng(tableplane.latitude, tableplane.longitude);
-                                var dist = google.maps.geometry.spherical.computeDistanceBetween (siteLatLon, planeLatLon);
+                                var siteLatLon  = new mapboxgl.LngLat(SiteLon, SiteLat)
+                                var planeLatLon = new mapboxgl.LngLat(tableplane.longitude, tableplane.latitude)
+                                // TODO: find mapbox equiv of this:
+                                // var dist = google.maps.geometry.spherical.computeDistanceBetween (siteLatLon, planeLatLon);
+                                var dist = 0
                                     if (Metric) {
                                         dist /= 1000;
                                     } else {
@@ -587,9 +574,10 @@ function selectPlaneByHex(hex) {
 		Planes[SelectedPlane].funcClearLine();
 		Planes[SelectedPlane].markerColor = MarkerColor;
 		// If the selected has a marker, make it not stand out
-		if (Planes[SelectedPlane].marker) {
-			Planes[SelectedPlane].marker.setIcon(Planes[SelectedPlane].funcGetIcon());
-		}
+		// TODO: correct this for MAPBOX
+		// if (Planes[SelectedPlane].marker) {
+		// 	Planes[SelectedPlane].marker.setIcon(Planes[SelectedPlane].funcGetIcon());
+		// }
 	}
 
 	// If we are clicking the same plane, we are deselected it.
@@ -600,7 +588,7 @@ function selectPlaneByHex(hex) {
 		// If the selected has a marker, make it stand out
 		if (Planes[SelectedPlane].marker) {
 			Planes[SelectedPlane].funcUpdateLines();
-			Planes[SelectedPlane].marker.setIcon(Planes[SelectedPlane].funcGetIcon());
+			// Planes[SelectedPlane].marker.setIcon(Planes[SelectedPlane].funcGetIcon());
 		}
 	} else { 
 		SelectedPlane = null;
@@ -622,7 +610,7 @@ function resetMap() {
     
     // Set and refresh
 	GoogleMap.setZoom(parseInt(ZoomLvl));
-	GoogleMap.setCenter(new google.maps.LatLng(parseFloat(CenterLat), parseFloat(CenterLon)));
+	GoogleMap.setCenter(new mapboxgl.LngLat(parseFloat(CenterLon), parseFloat(CenterLat)));
 	
 	if (SelectedPlane) {
 	    selectPlaneByHex(SelectedPlane);
@@ -631,28 +619,28 @@ function resetMap() {
 	refreshSelected();
 	refreshTableInfo();
 }
-
-function drawCircle(marker, distance) {
-    if (typeof distance === 'undefined') {
-        return false;
+// Disregard this for now
+// function drawCircle(marker, distance) {
+//     if (typeof distance === 'undefined') {
+//         return false;
         
-        if (!(!isNaN(parseFloat(distance)) && isFinite(distance)) || distance < 0) {
-            return false;
-        }
-    }
+//         if (!(!isNaN(parseFloat(distance)) && isFinite(distance)) || distance < 0) {
+//             return false;
+//         }
+//     }
     
-    distance *= 1000.0;
-    if (!Metric) {
-        distance *= 1.852;
-    }
+//     distance *= 1000.0;
+//     if (!Metric) {
+//         distance *= 1.852;
+//     }
     
-    // Add circle overlay and bind to marker
-    var circle = new google.maps.Circle({
-      map: GoogleMap,
-      radius: distance, // In meters
-      fillOpacity: 0.0,
-      strokeWeight: 1,
-      strokeOpacity: 0.3
-    });
-    circle.bindTo('center', marker, 'position');
-}
+//     // Add circle overlay and bind to marker
+//     var circle = new google.maps.Circle({
+//       map: map,
+//       radius: distance, // In meters
+//       fillOpacity: 0.0,
+//       strokeWeight: 1,
+//       strokeOpacity: 0.3
+//     });
+//     circle.bindTo('center', marker, 'position');
+// }
