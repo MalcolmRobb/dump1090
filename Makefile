@@ -11,9 +11,17 @@ EXTRACFLAGS=-DHTMLPATH=\"$(SHAREDIR)\"
 endif
 
 CFLAGS=-O2 -g -Wall -W `pkg-config --cflags librtlsdr`
-LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
-CC=gcc
+COMMON_LIBS=`pkg-config --libs librtlsdr` -lpthread -lm
 
+UNAME=$(shell uname)
+
+ifeq ($(UNAME), FreeBSD)
+	LIBS=$(COMMON_LIBS) -lcompat
+	CC=clang
+else
+	LIBS=$(COMMON_LIBS)
+	CC=gcc
+endif
 
 all: dump1090 view1090
 
