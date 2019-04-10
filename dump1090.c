@@ -657,6 +657,16 @@ int verbose_device_search(char *s)
 	fprintf(stderr, "No matching devices found.\n");
 	return -1;
 }
+
+void freeModes () {
+    if (Modes.icao_cache) free(Modes.icao_cache);
+    if (Modes.pFileData) free(Modes.pFileData);
+    if (Modes.magnitude) free(Modes.magnitude);
+    if (Modes.maglut) free(Modes.maglut);
+    if (Modes.beastOut) free(Modes.beastOut);
+    if (Modes.rawOut) free(Modes.rawOut);
+}
+
 //
 //=========================================================================
 //
@@ -894,8 +904,10 @@ int main(int argc, char **argv) {
     pthread_mutex_destroy(&Modes.data_mutex);
     pthread_join(Modes.reader_thread,NULL);     // Wait on reader thread exit
 #ifndef _WIN32
+    freeModes();
     pthread_exit(0);
 #else
+    freeModes();
     return (0);
 #endif
 }
