@@ -3,6 +3,7 @@
 # sure that the variable PREFIX is defined, e.g. make PREFIX=/usr/local
 #
 PROGNAME=dump1090
+PREFIX=/usr/local
 
 ifdef PREFIX
 BINDIR=$(PREFIX)/bin
@@ -28,3 +29,14 @@ view1090: view1090.o anet.o interactive.o mode_ac.o mode_s.o net_io.o
 
 clean:
 	rm -f *.o dump1090 view1090
+
+install:
+	strip -p dump1090 view1090
+   ifdef PREFIX
+	cp -p dump1090 $(BINDIR)
+	cp -p view1090 $(BINDIR)
+	mkdir -p $(SHAREDIR)
+	cp -R public_html/* $(SHAREDIR)
+	cp -p dump1090.service /lib/systemd/system
+	systemctl daemon-reload
+   endif

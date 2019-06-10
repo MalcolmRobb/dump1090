@@ -1,0 +1,11 @@
+[Unit]
+Description=dump1090 server
+After=network.target sshd.service
+
+[Service]
+EnvironmentFile=-/etc/default/dump1090
+ExecStart=/usr/local/bin/dump1090 $DUMP1090_OPTS
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
