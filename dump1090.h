@@ -235,10 +235,10 @@ struct stDF {
     uint64_t         llTimestamp;                // Timestamp at which the this packet was received
     uint32_t         addr;                       // Timestamp at which the this packet was received
     unsigned char    msg[MODES_LONG_MSG_BYTES];  // the binary
-} tDF;
+};
 
 // Program global state
-struct {                             // Internal state
+extern struct modes {                             // Internal state
     pthread_t       reader_thread;
 
     pthread_mutex_t data_mutex;      // Mutex to synchronize buffer access
