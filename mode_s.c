@@ -1453,7 +1453,7 @@ int detectOutOfPhase(uint16_t *pPreamble) {
     if (pPreamble[ 3] > pPreamble[2]/3) return  1;
     if (pPreamble[10] > pPreamble[9]/3) return  1;
     if (pPreamble[ 6] > pPreamble[7]/3) return -1;
-    if (pPreamble[-1] > pPreamble[1]/3) return -1;
+    if (pPreamble[-1] > pPreamble[0]/3) return -1;
     return 0;
 }
 
