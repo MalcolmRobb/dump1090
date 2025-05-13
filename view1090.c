@@ -49,7 +49,7 @@ int getTermRows() {
 } 
 
 // Handle resizing terminal
-void sigWinchCallback() {
+void sigWinchCallback(int sig) {
     signal(SIGWINCH, SIG_IGN);
     Modes.interactive_rows = getTermRows();
     interactiveShowData();
